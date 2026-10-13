@@ -132,7 +132,14 @@ def save_report(case_id: str, channel: str, payload: ReportInput):
         case['reports'][channel] = {**payload.model_dump(mode='json'),
                                    'recorded_at': previous['recorded_at'] if previous else utcnow().isoformat(),
                                    'updated_at': utcnow().isoformat()}
-        case.setdefault('journey', {})[channel] = {'state': 'waiting', 'remind_at': None}
+        journey = case.setdefault('journey', {})
+        if not previous:
+            # A first report replaces any attempt state and its reminder.
+            journey[channel] = {'state': 'waiting', 'remind_at': None}
+        # A correction keeps the user's waiting/resolved choice and follow-up reminder.
+        case.setdefault('journey_history', []).append({
+            'channel': channel, 'state': 'report_updated' if previous else 'report_saved',
+            'remind_at': None, 'recorded_at': utcnow().isoformat()})
         connection.execute('UPDATE cases SET data=? WHERE id=?', (json.dumps(case), case_id))
     return decorate(case)
 

@@ -28,7 +28,14 @@ class CaseInput(BaseModel):
     source: Literal['manual', 'sample', 'fixture', 'text'] = 'manual'
     confirmed: Literal[True]
 
-    _time = field_validator('occurred_at')(valid_time)
+    @field_validator('occurred_at')
+    @classmethod
+    def plausible_transaction_time(cls, value: datetime) -> datetime:
+        value = valid_time(value)
+        # Catches mistyped years such as 0026; not a legal or eligibility limit.
+        if value.year < 2000:
+            raise ValueError('Check the year of the transaction.')
+        return value
 
     @field_validator('bank', 'reference', 'payee', 'description')
     @classmethod

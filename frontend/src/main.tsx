@@ -9,6 +9,8 @@ import './refinements.css';
 const channels:Channel[] = ['helpline','bank','portal'];
 const channelNames = {helpline:'Call 1930',bank:'Contact your bank',portal:'Complete the portal report'};
 const icons = {helpline:Phone,bank:Landmark,portal:FileText};
+// Attempts never read as reports; reported steps never read as verified outcomes.
+const stateLabels:Record<string,string> = {not_started:'Not started',later:'Planned · not reported yet',no_answer:'No answer · not reported yet',waiting:'Reported · awaiting reply',resolved:'Reported · you marked resolved'};
 const emptyFacts = ():Facts => ({amount_paise:0,occurred_at:'',bank:'',method:'Other',reference:'',payee:'',description:'',source:'manual'});
 const errText = (e:unknown) => e instanceof Error?e.message:'Something went wrong. Try again.';
 function go(path:string) {window.history.pushState({},'',path);window.dispatchEvent(new PopStateEvent('popstate'));window.scrollTo(0,0);}
@@ -43,7 +45,7 @@ function Home(){
   return <div className="home page-enter">
     <div className="eyebrow"><span/> A CLEAR WAY FORWARD</div>
     <div className="hero-grid">
-      <section className="hero-copy"><h1>Lost money to a scam?<br/><em>We’ll help you report it.</em></h1><p className="hero-description">Tell us what happened. We’ll prepare what you need to say,<br/>then help you keep track of your reports.</p>
+      <section className="hero-copy"><h1>Lost money to a scam?<br/><em>We’ll help you report it.</em></h1><p className="hero-description">Tell us what happened. We’ll prepare what you need to say, <br/>then help you keep track of your reports.</p>
         <div className="hero-actions"><button className="button primary" onClick={()=>go('/prepare')}>Get started <ArrowRight size={18}/></button>{resume&&<button className="text-button" onClick={()=>go('/case/'+resume)}>Continue my report <ArrowUpRight size={16}/></button>}</div>
         <div className="trust-line"><span><Check size={15}/> No account needed</span><span><Check size={15}/> Always in your control</span></div>
       </section>
@@ -59,15 +61,50 @@ function Home(){
     <div className="gentle-note"><HelpCircle size={18}/><p>Already reported? You can still use Reclaim to organise the facts and save your references. Recovery is never guaranteed.</p></div>
   </div>
 }
+// Unsaved intake answers live in this tab only, so Back, reload and phone back keep them.
+const DRAFT_KEY='reclaim-intake-draft';
+const defaultNote='Enter only fictional details in this prototype.';
+type Draft={facts:Facts;amount:string;sourceNote:string};
+function readDraft():Draft|null{try{const value=sessionStorage.getItem(DRAFT_KEY);return value?JSON.parse(value):null}catch{return null}}
+// Accepts what people type: ₹18,000 · Rs. 1,80,000 · INR 18000.50
+export function parsePaise(text:string):number|null{
+  const cleaned=text.trim().replace(/^(₹|rs\.?|inr)\s*/i,'').replace(/[,\s]/g,'');
+  if(!/^\d+(\.\d{1,2})?$/.test(cleaned)||Number(cleaned)<=0)return null;
+  return Math.round(Number(cleaned)*100);
+}
+function stepProblem(step:number,facts:Facts,amount:string):string{
+  if(step===1){const paise=parsePaise(amount);
+    if(paise===null)return 'Enter the amount as a number, for example 18000 or 18,000.50.';
+    if(paise>1_000_000_000)return 'This prototype supports amounts up to ₹1 crore.';
+    if(!facts.occurred_at)return 'Enter the date and time of the payment. An approximate time is fine.';
+    const when=new Date(facts.occurred_at);
+    if(isNaN(when.getTime())||when.getFullYear()<2000)return 'Check the year of the transaction.';
+    if(when>new Date())return 'The transaction time cannot be in the future.';}
+  if(step===2&&(!/[A-Za-z஀-௿]/.test(facts.bank)||facts.bank.trim().length<2))return 'Enter your bank’s name, not an account number.';
+  if(step===4&&facts.description.trim().length<10)return 'Describe what happened in a few words (at least 10 characters).';
+  return '';
+}
 function Prepare({notify}:{notify:(text:string)=>void}){
-  const [facts,setFacts]=useState<Facts>(emptyFacts);
-  const [amount,setAmount]=useState('');
-  const [step,setStep]=useState(1);
+  const [draft]=useState(readDraft);
+  const [facts,setFacts]=useState<Facts>(()=>draft?.facts||emptyFacts());
+  const [amount,setAmount]=useState(draft?.amount||'');
+  const [step,setStep]=useState(()=>{const saved=Number(history.state?.intakeStep);return draft&&saved>=1&&saved<=5?saved:1});
   const [confirmed,setConfirmed]=useState(false);
   const [busy,setBusy]=useState(false);
   const [error,setError]=useState('');
-  const [sourceNote,setSourceNote]=useState('Enter only fictional details in this prototype.');
+  const [sourceNote,setSourceNote]=useState(draft?.sourceNote||defaultNote);
   const [sms,setSms]=useState('');
+  const hasAnswers=Boolean(amount||facts.occurred_at||facts.bank||facts.reference||facts.payee||facts.description);
+  useEffect(()=>{if(hasAnswers)sessionStorage.setItem(DRAFT_KEY,JSON.stringify({facts,amount,sourceNote}))},[facts,amount,sourceNote,hasAnswers]);
+  // Browser and phone Back move between intake steps instead of leaving the form.
+  useEffect(()=>{const onPop=()=>{if(location.pathname!=='/prepare')return;
+    const wanted=Number(history.state?.intakeStep)||1;
+    let allowed=wanted;for(let s=1;s<wanted;s++){if(stepProblem(s,facts,amount)){allowed=s;break}}
+    if(allowed!==wanted)history.replaceState({intakeStep:allowed},'',location.pathname);
+    setStep(allowed);setError(allowed!==wanted?stepProblem(allowed,facts,amount):'');setConfirmed(false);window.scrollTo(0,0)};
+    addEventListener('popstate',onPop);return()=>removeEventListener('popstate',onPop)},[facts,amount]);
+  function back(){setError('');if(step>1&&Number(history.state?.intakeStep)===step)history.back();else if(step>1)setStep(step-1);else go('/')}
+  function startOver(){sessionStorage.removeItem(DRAFT_KEY);setFacts(emptyFacts());setAmount('');setSourceNote(defaultNote);setConfirmed(false);setError('');history.replaceState({intakeStep:1},'',location.pathname);setStep(1)}
   async function readText(){setBusy(true);setError('');try{
     const result=await api<{fields:Partial<Facts>;message:string}>('/extract-text',{method:'POST',body:JSON.stringify({text:sms})});
     setFacts({...emptyFacts(),...result.fields,source:'text'});setAmount(result.fields.amount_paise?String(result.fields.amount_paise/100):'');setConfirmed(false);setSourceNote(result.message);
@@ -83,13 +120,16 @@ function Prepare({notify}:{notify:(text:string)=>void}){
     setConfirmed(false);setSourceNote(result.message);
   }catch(e){setError(errText(e))}finally{setBusy(false)}}
   function review(event:React.FormEvent){event.preventDefault();setError('');
-    const enteredAmount=amount.replace(/,/g,'').trim();if(!/^\d+(\.\d{1,2})?$/.test(enteredAmount)||Number(enteredAmount)<=0){setError('Enter a positive amount with at most two decimal places.');return}
-    const paise=Math.round(Number(enteredAmount)*100);if(paise>1_000_000_000){setError('This prototype supports amounts up to ₹1 crore.');return}
-    if(step===2&&(!/[A-Za-z\u0B80-\u0BFF]/.test(facts.bank)||facts.bank.trim().length<2)){setError('Enter your bank’s name, not an account number.');return}if(!facts.occurred_at||new Date(facts.occurred_at)>new Date()){setError('Enter a transaction time that is not in the future.');return}
-    setFacts(prev=>({...prev,amount_paise:paise}));setStep(step+1);setConfirmed(false);window.scrollTo(0,0);
+    for(let s=1;s<=step;s++){const problem=stepProblem(s,facts,amount);if(problem){setError(problem);return}}
+    setFacts(prev=>({...prev,amount_paise:parsePaise(amount)!}));history.pushState({intakeStep:step+1},'',location.pathname);setStep(step+1);setConfirmed(false);window.scrollTo(0,0);
   }
-  async function create(){setBusy(true);setError('');try{const c=await api<Case>('/cases',{method:'POST',body:JSON.stringify({...facts,confirmed})});localStorage.setItem('reclaim-case',c.id);notify('Case saved on this machine.');go('/case/'+c.id)}catch(e){setError(errText(e))}finally{setBusy(false)}}
-  return <div className="inner-page page-enter"><button className="back-link" onClick={()=>step>1?setStep(step-1):go('/')}><ChevronLeft size={17}/>{step>1?'Back':'Back to home'}</button>
+  async function create(){setError('');
+    for(let s=1;s<=4;s++){const problem=stepProblem(s,facts,amount);if(problem){setError(problem);return}}
+    setBusy(true);try{const c=await api<Case>('/cases',{method:'POST',body:JSON.stringify({...facts,amount_paise:parsePaise(amount),confirmed})});localStorage.setItem('reclaim-case',c.id);sessionStorage.removeItem(DRAFT_KEY);notify('Case saved on this machine.');go('/case/'+c.id)}catch(e){setError(errText(e))}finally{setBusy(false)}}
+  function chooseDescription(text:string){const current=facts.description.trim();update('description',!current||current===text?text:current.includes(text)?current:text+' '+current)}
+  const reviewPaise=parsePaise(amount)??facts.amount_paise;
+  return <div className="inner-page page-enter"><div className="intake-nav"><button className="back-link" onClick={back}><ChevronLeft size={17}/>{step>1?'Back':'Back to home'}</button>{hasAnswers&&<button className="text-button" onClick={startOver}>Clear my answers</button>}</div>
+    {draft&&step===1&&hasAnswers&&<p className="source-note" role="status">Your earlier answers on this device were kept. Check them, or clear them to start again.</p>}
     <div className="section-heading"><div><span className="eyebrow">YOUR CASE STARTS HERE</span><h1 className="page-title">{step===1?'Which payment went wrong?':step===2?'Which bank and payment method?':step===3?'Do you have a payment reference?':step===4?'What happened?':'Check your details.'}</h1><p className="muted">{step===1?'Just the amount and date to begin.':step===2?'Choose the payment method and enter your bank.':step===3?'Both details are optional. You can continue without them.':step===4?'Pick a starting point, then change anything that is not right.':'We’ll use these details to prepare your reports.'}</p></div><span className="step-counter">0{step} <span>/ 05</span></span></div>
     <div className="compact-urgent"><Phone size={17}/> You can report now, even without a complete case. <a href="tel:1930">Call 1930 ↗</a></div>
     {error&&<div className="error" role="alert"><AlertCircle size={18}/>{error}</div>}
@@ -100,14 +140,14 @@ function Prepare({notify}:{notify:(text:string)=>void}){
         <p className="source-note" role="status">{busy?'Loading…':sourceNote}</p>
         </details>}<form onSubmit={review}>{step===1?<div className="fields-grid">
           <label>Amount lost (₹)<input required inputMode="decimal" value={amount} placeholder="e.g. 18000" onChange={e=>{setAmount(e.target.value);setConfirmed(false)}}/></label>
-          <label>Transaction date & time (IST)<input required type="datetime-local" value={facts.occurred_at?localInput(facts.occurred_at):''} onChange={e=>update('occurred_at',e.target.value?fromInput(e.target.value):'')}/></label>
+          <label>Transaction date & time (IST)<input required type="datetime-local" min="2000-01-01T00:00" max={localInput(new Date().toISOString())} value={facts.occurred_at?localInput(facts.occurred_at):''} onChange={e=>update('occurred_at',e.target.value?fromInput(e.target.value):'')}/></label>
           </div>:step===2?<div className="fields-grid"><label>Your bank<input required minLength={2} maxLength={100} value={facts.bank} placeholder="Bank name" onChange={e=>update('bank',e.target.value)}/></label>
           <label>Payment method<select value={facts.method} onChange={e=>update('method',e.target.value as Facts['method'])}><option>UPI</option><option>Card</option><option>Net banking</option><option>Other</option></select></label>
           </div>:step===3?<div className="fields-grid"><label>Transaction reference <span className="optional">if available</span><input maxLength={100} value={facts.reference} placeholder="UTR or transaction ID" onChange={e=>update('reference',e.target.value)}/></label>
           <label>Recipient <span className="optional">if available</span><input maxLength={200} value={facts.payee} placeholder="UPI ID or recipient name" onChange={e=>update('payee',e.target.value)}/></label>
-        </div>:<><div className="answer-options">{['A caller asked me to make a payment.','I paid for something that did not arrive.','I noticed a payment I do not recognise.','Someone offered a job or investment and asked for money.'].map(text=><button type="button" className="button secondary" key={text} onClick={()=>update('description',text)}>{text}</button>)}</div><label className="full-label">What happened?<textarea required minLength={10} maxLength={4000} rows={4} value={facts.description} placeholder="Describe the incident in your own words. Do not enter passwords, PINs or OTPs." onChange={e=>update('description',e.target.value)}/></label></>}
+        </div>:<><div className="answer-options">{['A caller asked me to make a payment.','I paid for something that did not arrive.','I noticed a payment I do not recognise.','Someone offered a job or investment and asked for money.'].map(text=><button type="button" className="button secondary" key={text} onClick={()=>chooseDescription(text)}>{text}</button>)}</div><label className="full-label">What happened?<textarea required minLength={10} maxLength={4000} rows={4} value={facts.description} placeholder="Describe the incident in your own words. Do not enter passwords, PINs or OTPs." onChange={e=>update('description',e.target.value)}/></label></>}
         <div className="form-bottom"><span><LockKeyhole size={14}/> Saved only when you confirm</span><button className="button primary" disabled={busy}>{step<4?'Continue':'Check my details'} <ArrowRight size={17}/></button></div></form></>:
-        <><div className="review-amount"><span>AMOUNT REPORTED</span><strong>{money(facts.amount_paise)}</strong><span>{facts.method} · {facts.bank}</span></div><dl className="fact-list">{[['Transaction time',date(facts.occurred_at)],['Reference',facts.reference||'Not provided'],['Recipient',facts.payee||'Not provided'],['Source',facts.source==='manual'?'Manual entry':facts.source==='text'?'Local text parsing (review required)':'Synthetic demonstration sample']].map(([key,value])=><div key={key}><dt>{key}</dt><dd>{value}</dd></div>)}</dl>{facts.method==='UPI'&&facts.reference&&!/^\d{12}$/.test(facts.reference)&&<p className="missing-note">Double-check the payment reference against the original receipt. It does not look like a typical 12-digit UPI reference; some identifiers use other formats.</p>}{facts.amount_paise>=10000000&&<p className="missing-note">You entered {money(facts.amount_paise)}. Check the number of zeros before confirming.</p>}<h3>Your description</h3><p className="description-review">{facts.description}</p><label className="confirm-box"><input type="checkbox" checked={confirmed} onChange={e=>setConfirmed(e.target.checked)}/><span>I have checked these details. I understand that creating a case does not submit a report.</span></label><button className="button primary wide" disabled={!confirmed||busy} onClick={create}>{busy?'Saving…':'Show me what to do'}<ArrowRight size={17}/></button></>}
+        <><div className="review-amount"><span>AMOUNT REPORTED</span><strong>{money(reviewPaise)}</strong><span>{facts.method} · {facts.bank}</span></div><dl className="fact-list">{[['Transaction time',date(facts.occurred_at)],['Reference',facts.reference||'Not provided'],['Recipient',facts.payee||'Not provided'],['Source',facts.source==='manual'?'Manual entry':facts.source==='text'?'Local text parsing (review required)':'Synthetic demonstration sample']].map(([key,value])=><div key={key}><dt>{key}</dt><dd>{value}</dd></div>)}</dl>{facts.method==='UPI'&&facts.reference&&!/^\d{12}$/.test(facts.reference)&&<p className="missing-note">Double-check the payment reference against the original receipt. It does not look like a typical 12-digit UPI reference; some identifiers use other formats.</p>}{reviewPaise>=10000000&&<p className="missing-note">You entered {money(reviewPaise)}. Check the number of zeros before confirming.</p>}{Date.now()-new Date(facts.occurred_at).getTime()>365*86400000&&<p className="missing-note">This payment was more than a year ago. Check the year before confirming.</p>}<h3>Your description</h3><p className="description-review">{facts.description}</p><label className="confirm-box"><input type="checkbox" checked={confirmed} onChange={e=>setConfirmed(e.target.checked)}/><span>I have checked these details. I understand that creating a case does not submit a report.</span></label><button className="button primary wide" disabled={!confirmed||busy} onClick={create}>{busy?'Saving…':'Show me what to do'}<ArrowRight size={17}/></button></>}
     </section><aside className="help-card"><span className="icon-box light"><ShieldCheck size={22}/></span><h3>Just the details that matter.</h3><p>A transaction reference and a short description help make your reports consistent.</p><div className="divider"/><strong>Can’t find a detail?</strong><p>Leave optional fields empty and add the information directly when reporting.</p><strong>Keep original evidence.</strong><p>Preserve screenshots and messages. This prototype does not store uploaded images or include them in exports.</p><a className="text-button" href="/api/sample/image" download>Download fictional sample <Download size={15}/></a><div className="help-foot"><LockKeyhole size={16}/> Never enter an OTP, PIN, password or full account number.</div></aside></div>
   </div>
 }
@@ -115,7 +155,7 @@ function CaseView({id,notify}:{id:string;notify:(text:string)=>void}){
   const [c,setC]=useState<Case|null>(null);const [docs,setDocs]=useState<Docs|null>(null);const [active,setActive]=useState<Channel>('helpline');
   const [reference,setReference]=useState('');const [reportedAt,setReportedAt]=useState(localInput(new Date().toISOString()));
   const [attest,setAttest]=useState(false);const [busy,setBusy]=useState(false);const [error,setError]=useState('');const [deleting,setDeleting]=useState(false);
-  async function refresh(){setError('');try{const [value,text]=await Promise.all([api<Case>('/cases/'+id),api<Docs>('/cases/'+id+'/docs')]);setC(value);setDocs(text)}catch(e){setError(errText(e))}}
+  async function refresh(){setError('');try{const [value,text]=await Promise.all([api<Case>('/cases/'+id),api<Docs>('/cases/'+id+'/docs')]);setC(value);setDocs(text)}catch(e){const message=errText(e);if(message.startsWith('Case not found')&&localStorage.getItem('reclaim-case')===id)localStorage.removeItem('reclaim-case');setError(message)}}
   useEffect(()=>{void refresh()},[id]);
   useEffect(()=>{const r=c?.reports[active];setReference(r?.reference||'');setReportedAt(localInput(r?.reported_at||new Date().toISOString()));setAttest(false)},[active,c]);
   async function save(e:React.FormEvent){e.preventDefault();setBusy(true);setError('');try{await api('/cases/'+id+'/reports/'+active,{method:'PUT',body:JSON.stringify({reference,reported_at:fromInput(reportedAt)})});await refresh();notify('Saved. You can move to the next step.')}catch(e){setError(errText(e))}finally{setBusy(false)}}
@@ -127,12 +167,12 @@ function CaseView({id,notify}:{id:string;notify:(text:string)=>void}){
   return <div className="inner-page page-enter"><button className="back-link" onClick={()=>go('/')}><ChevronLeft size={17}/> Overview</button><div className="section-heading"><div><div className="eyebrow">YOUR CASE · {id}</div><h1 className="page-title">One clear step at a time.</h1><p className="muted">{money(c.amount_paise)} · {c.bank} · {date(c.occurred_at)}</p></div><button disabled={busy} className="button secondary" onClick={exportPDF}><Download size={17}/> Case pack</button></div>
     {error&&<div className="error" role="alert">{error}</div>}
     <div className={'progress-banner '+(c.reports_recorded===3?'complete':'')}><div className="progress-count">{c.reports_recorded}<span>/3</span></div><div><strong>{c.reports_recorded===3?'Your reporting records are together.':'Let’s get your reports ready.'}</strong><p>{c.plan?.reason||(c.reports_recorded===3?'Keep your references while waiting for a reply.':'Call 1930 and contact your bank promptly.')}</p></div><span className="soft-badge">Saved by you</span></div>
-    {c.plan?.next_channel&&c.plan.next_channel!==active&&<button className="button primary" onClick={()=>setActive(c.plan!.next_channel!)}>Suggested next step: {channelNames[c.plan.next_channel]} <ArrowRight size={17}/></button>}{c.missing_fields.length>0&&<div className="missing-note"><AlertCircle size={17}/> Still to gather: {c.missing_fields.join(', ')}. You can report without waiting for a complete pack.</div>}
-    <div className="case-grid"><aside className="step-menu"><span className="eyebrow">REPORTING ACTIONS</span>{channels.map((ch,i)=>{const I=icons[ch];return <button key={ch} className={'step-tab '+(ch===active?'selected':'')} onClick={()=>setActive(ch)}><span className="step-icon"><I size={20}/></span><div><small>ACTION 0{i+1}</small><strong>{channelNames[ch]}</strong><span>{c.plan?.steps.find(s=>s.channel===ch)?.state.replace('_',' ')||(c.reports[ch]?'Report saved':'Not started')}</span></div>{c.reports[ch]?<CheckCircle2 size={18} className="green"/>:<Circle size={16}/>}</button>})}<div className="case-side-note"><ShieldCheck size={19}/><p>Preparing or copying a draft doesn’t file a complaint. Submit through the official channel.</p></div><a href={'/api/cases/'+id+'/export.json'} className="text-button"><Download size={15}/> Export case data</a><button className="text-button delete-link" onClick={()=>setDeleting(true)}><Trash2 size={15}/> Delete this case</button></aside>
+    {c.plan?.next_channel&&c.plan.next_channel!==active&&<button className="button primary suggested-next" onClick={()=>setActive(c.plan!.next_channel!)}>Suggested next step: {channelNames[c.plan.next_channel]} <ArrowRight size={17}/></button>}{c.missing_fields.length>0&&<div className="missing-note"><AlertCircle size={17}/> Still to gather: {c.missing_fields.join(', ')}. You can report without waiting for a complete pack.</div>}
+    <div className="case-grid"><aside className="step-menu"><span className="eyebrow">REPORTING ACTIONS</span>{channels.map((ch,i)=>{const I=icons[ch];return <button key={ch} className={'step-tab '+(ch===active?'selected':'')} onClick={()=>setActive(ch)}><span className="step-icon"><I size={20}/></span><div><small>ACTION 0{i+1}</small><strong>{channelNames[ch]}</strong><span>{stateLabels[c.plan?.steps.find(s=>s.channel===ch)?.state||(c.reports[ch]?'waiting':'not_started')]}</span></div>{c.reports[ch]?<CheckCircle2 size={18} className="green"/>:<Circle size={16}/>}</button>})}<div className="case-side-note"><ShieldCheck size={19}/><p>Preparing or copying a draft doesn’t file a complaint. Submit through the official channel.</p></div><a href={'/api/cases/'+id+'/export.json'} className="text-button"><Download size={15}/> Export case data</a><button className="text-button delete-link" onClick={()=>setDeleting(true)}><Trash2 size={15}/> Delete this case</button></aside>
       <section className="draft-card"><div className="draft-header"><span className="icon-box"><Icon size={21}/></span><div><h2>{channelNames[active]}</h2><p>{active==='helpline'?'Use these notes when you speak with the helpline.':active==='bank'?'Use your bank’s official app, website, phone number or branch.':'Review this draft and submit it on the official portal.'}</p></div></div>
       <div className="draft-label"><span>{active==='helpline'?'CALL NOTES':'PREPARED DRAFT'}</span><button className="text-button" onClick={copy}><Copy size={15}/> Copy text</button></div><textarea className="draft-text" readOnly aria-label="Prepared reporting draft" value={docs?.[active]||'Loading draft…'} rows={12}/>
       <div className="external-action">{active==='helpline'?<a href="tel:1930" className="button primary"><Phone size={16}/> Call 1930 <ArrowUpRight size={16}/></a>:active==='portal'?<a href="https://cybercrime.gov.in/" target="_blank" rel="noreferrer" className="button primary">Open official portal <ArrowUpRight size={17}/></a>:<div className="bank-tip"><Landmark size={20}/><span>Find your bank’s fraud reporting option in its official app or website. Reclaim does not send this letter.</span></div>}<span className="muted small">Keep the reference you receive.</span></div>
-      <GuidedStep id={id} channel={active} plan={c.plan} refresh={refresh} onNext={ch=>{setActive(ch);window.scrollTo(0,0)}}><form className="report-form" onSubmit={save}><h3>{c.reports[active]?'Update your reporting record':'Already contacted them?'}</h3><p>After you contact them, save the date and any reference they give you.</p><div className="fields-grid"><label>Complaint reference <span className="optional">if received</span><input maxLength={100} value={reference} onChange={e=>setReference(e.target.value)} placeholder="Leave empty if pending"/></label><label>When you reported (IST)<input required type="datetime-local" value={reportedAt} onChange={e=>setReportedAt(e.target.value)}/></label></div><label className="confirm-box"><input type="checkbox" required checked={attest} onChange={e=>setAttest(e.target.checked)}/><span>I contacted them at the date and time shown above.</span></label><button className="button secondary" disabled={busy||!attest}>{busy?'Saving…':'Save this step'}<Check size={17}/></button></form></GuidedStep>
+      <GuidedStep id={id} channel={active} plan={c.plan} refresh={refresh} onNext={ch=>{setActive(ch);window.scrollTo(0,0)}}><form className="report-form" onSubmit={save}><h3>{c.reports[active]?'Update your reporting record':'Already contacted them?'}</h3><p>After you contact them, save the date and any reference they give you.</p><div className="fields-grid"><label>Complaint reference <span className="optional">if received</span><input maxLength={100} value={reference} onChange={e=>setReference(e.target.value)} placeholder="Leave empty if pending"/></label><label>When you reported (IST)<input required type="datetime-local" min={localInput(c.occurred_at)} max={localInput(new Date().toISOString())} value={reportedAt} onChange={e=>setReportedAt(e.target.value)}/></label></div><label className="confirm-box"><input type="checkbox" required checked={attest} onChange={e=>setAttest(e.target.checked)}/><span>I contacted them at the date and time shown above.</span></label><button className="button secondary" disabled={busy||!attest}>{busy?'Saving…':'Save this step'}<Check size={17}/></button></form></GuidedStep>
       </section></div><div className="gentle-note"><HelpCircle size={18}/><p>{c.policy.message} Be wary of anyone promising recovery for a fee.</p></div>
       {deleting&&<div className="modal-backdrop"><section className="modal" role="dialog" aria-modal="true" aria-labelledby="delete-heading"><h2 id="delete-heading">Delete this case?</h2><p>This removes the stored case and reporting records from this demo. Export a copy first if you want to keep it.</p><div className="modal-actions"><button autoFocus className="button secondary" onClick={()=>setDeleting(false)}>Keep case</button><button disabled={busy} className="button danger" onClick={remove}>Delete case</button></div></section></div>}
   </div>

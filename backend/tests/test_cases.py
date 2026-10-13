@@ -123,3 +123,9 @@ def test_bank_number_is_not_accepted_as_name(client):
 def test_hidden_control_characters_are_rejected(client):
     data=case_data(client);data['reference']='123\x00789'
     assert client.post('/api/cases',json=data).status_code==422
+
+@pytest.mark.parametrize('when',['0026-10-12T14:12:00+00:00','1999-12-31T23:00:00+00:00'])
+def test_mistyped_transaction_year_is_rejected(client, when):
+    response = client.post('/api/cases', json={**case_data(client), 'occurred_at': when})
+    assert response.status_code == 422
+    assert 'year' in response.text

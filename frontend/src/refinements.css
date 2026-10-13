@@ -85,3 +85,10 @@ input::placeholder,textarea::placeholder{color:#718066;font-size:12px}
   .draft-header p{font-size:11px}
   .external-action>.small{font-size:11px}
 }
+/* C06 audit: intake navigation, save feedback and saved-reference line. */
+.intake-nav{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.guided-step .notice{background:#eef6ea;border:1px solid #cfe2c6;border-radius:8px;padding:10px 14px;color:#2f5a2a}
+.guided-step .reference-line{margin-top:0}
+.guided-step .reference-line strong{overflow-wrap:anywhere}
+.suggested-next{white-space:normal;max-width:100%;text-align:left;margin-bottom:12px}
+.guided-step .button.wide{white-space:normal;max-width:100%}
