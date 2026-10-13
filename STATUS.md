@@ -3,12 +3,13 @@
 Updated: 13 October 2026, Asia/Kolkata.
 Phase: working local prototype; user-focused workflow refinement.
 
-Latest milestone: C05 guided delays and reminders. Read docs/GUIDED_WORKFLOW.md.
-35 backend tests and the production build pass. Browser verified unanswered attempt ->
-saved reminder -> alternate-channel suggestion, restart persistence and calendar export.
-Intake now has five short steps, at most two ordinary inputs per screen. Existing
-three-step mentions below describe the earlier baseline, not the latest interface.
-Tamil assistance is a limited preview, not a completed translation.
+Latest milestone: C06 implementation audit and journey fixes (see docs/GUIDED_WORKFLOW.md,
+"C06 audit"). 39 backend tests and the production build pass (scripts/verify.ps1).
+Browser-verified on a separate audit DB: wrong input, Back/reload without losing answers,
+no-answer vs reported labels, waiting + reference correction, reminder cancel, due reminder
+after reopening, deleted-case resume link, and 360px layout with no horizontal overflow.
+Previous: C05 guided delays and reminders. Intake has five short steps, at most two
+ordinary inputs per screen. Tamil assistance is a limited preview, not a translation.
 In-app reminders/calendar export are implemented; SMS/push/background delivery is not.
 
 ## User direction
@@ -41,15 +42,18 @@ Server started in this chat; if unavailable rerun the script. It is loopback onl
 Run scripts/verify.ps1. Restricted execution may need permission for test-loop sockets.
 
 ## Next work
-Priority update: follow `docs/INTELLIGENCE_ROADMAP.md` I1-I5. The existing app is the
-baseline; the distinguishing evidence-to-action engine is not built yet.
-1. Finish presentation view QA; revised mobile save/next-step flow now verified.
-2. Add safe editing of confirmed case facts with explicit re-confirmation.
-3. Improve live extraction behind a configured provider; keep honest manual fallback.
-4. Review Tamil translations and multilingual PDF font/shaping before enabling them.
-5. Add multiple transactions after the single-transaction path is reliable.
+Priority: `docs/INTELLIGENCE_ROADMAP.md` I1-I5. The evidence-to-action engine is not built.
+1. I1: safe editing of confirmed case facts with explicit re-confirmation.
+2. Independent (non-developer) phone walkthrough of the C06 journey; record confusion points.
+3. Custom reminder date/time; "later" currently offers only 15/30/60 minutes.
+4. Improve live extraction behind a configured provider; keep honest manual fallback.
+5. Review Tamil translations and multilingual PDF font/shaping before enabling them.
 
 ## Known limits
+- Phone checks used a 360px same-origin frame inside desktop Chrome, not a real device.
+- On a phone, "How did this step go?" sits below the draft text; users must scroll to it.
+- A server started by an earlier session may still be listening on port 8000 with old
+  code. Restart scripts/run.ps1 to serve the C06 build.
 - No live screenshot OCR/AI, background reminder delivery, authentication, real filing or bank integration.
 - PDF currently supports its bundled Latin font; unsupported glyphs return a clear
   error and JSON preserves the original text. Do not claim Tamil PDF support.

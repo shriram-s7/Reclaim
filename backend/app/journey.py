@@ -36,7 +36,8 @@ def plan(case: dict, now: datetime | None = None) -> dict:
             'waiting': 'Your report is saved. A reply or reference may take time.',
             'resolved': 'You marked this step as resolved. This does not confirm money was recovered.'}
         steps.append({'channel': channel, 'state': state, 'message': messages[state],
-                      'remind_at': reminder, 'due': due, 'reported': bool(report)})
+                      'remind_at': reminder, 'due': due, 'reported': bool(report),
+                      'reference': report.get('reference', '') if report else None})
     due_steps = [s for s in steps if s['due']]
     open_steps = [s for s in steps if s['state'] == 'not_started']
     retries = [s for s in steps if s['state'] in ('no_answer', 'later')]

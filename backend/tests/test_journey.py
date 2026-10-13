@@ -39,3 +39,24 @@ def test_report_clears_attempt_reminder_and_can_wait(client):
 @pytest.mark.parametrize('at',['2020-01-01T00:00:00Z','2999-01-01T00:00:00Z','2026-10-14T10:00:00'])
 def test_reject_bad_reminder_time(at):
     with pytest.raises(ValidationError):JourneyInput(state='later',remind_at=at)
+
+def test_correcting_reference_keeps_follow_up_reminder_and_resolution(client):
+    c=create(client);base=f"/api/cases/{c['id']}";now=datetime.now(timezone.utc)
+    client.put(base+'/reports/bank',json={'reference':'','reported_at':now.isoformat()})
+    remind=(now+timedelta(days=1)).isoformat()
+    client.put(base+'/journey/bank',json={'state':'waiting','remind_at':remind})
+    r=client.put(base+'/reports/bank',json={'reference':'BANK-123','reported_at':now.isoformat()}).json()
+    assert r['journey']['bank']['state']=='waiting'
+    assert datetime.fromisoformat(r['journey']['bank']['remind_at'])==datetime.fromisoformat(remind)
+    assert r['plan']['steps'][1]['reference']=='BANK-123'
+    client.put(base+'/journey/bank',json={'state':'resolved'})
+    r=client.put(base+'/reports/bank',json={'reference':'BANK-124','reported_at':now.isoformat()}).json()
+    assert r['journey']['bank']['state']=='resolved'
+    assert [e['state'] for e in r['journey_history'] if e['channel']=='bank']==['report_saved','waiting','report_updated','resolved','report_updated']
+
+def test_cancelling_reminder_persists_and_keeps_attempt_unreported(client):
+    c=create(client);base=f"/api/cases/{c['id']}"
+    client.put(base+'/journey/helpline',json={'state':'no_answer','remind_at':(datetime.now(timezone.utc)+timedelta(minutes=30)).isoformat()})
+    assert client.put(base+'/journey/helpline',json={'state':'no_answer','remind_at':None}).status_code==200
+    step=client.get(base).json()['plan']['steps'][0]
+    assert step['state']=='no_answer' and step['remind_at'] is None and not step['reported'] and step['reference'] is None

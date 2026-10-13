@@ -50,4 +50,15 @@ delays and uncertainty, minimize typing, support regional-language assistance.
   through a dedicated follow-up-attempt state (currently waiting covers follow-up).
 - Broader accessibility and independent user testing.
 
+## C06 audit (13 October 2026)
+Implementation was audited against this document in the browser and API, not from docs.
+Confirmed behaviour: attempts never count as reports; waiting/resolved need a saved report;
+reminders persist across reload and cancel without changing status; due reminders lead the
+plan after reopening. Fixed defects are listed in docs/PROGRESS.md (C06).
+New rules: intake answers survive Back/reload in the same tab until the case is created or
+the user clears them; correcting a reference keeps waiting/resolved state and reminders;
+transaction years before 2000 are rejected as likely typos (not a legal limit).
+Still open: custom reminder time, real-device and assistive-technology testing, and placing
+the step choices higher on phones.
+
 Do not describe this rules-based milestone as live AI evidence intelligence.

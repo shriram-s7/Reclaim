@@ -1,5 +1,32 @@
 # Progress log
 
+## 2026-10-13 - C06: implementation audit against documentation
+- Baseline re-run before edits: 35 tests passed, build passed. Then walked the journey in
+  Chrome on a separate audit server (127.0.0.1:5173, tmp/audit.db) and API probes.
+- Defects found and fixed (each reproduced first):
+  1. Browser/phone Back during intake left the app and lost every answer; reload did too.
+     Steps are now history entries; unsaved answers are kept in sessionStorage for the tab,
+     with a "Clear my answers" control. Draft is removed once the case is created.
+  2. "₹18,000" / "Rs. 1,80,000" rejected as invalid amounts. Prefixes/commas now accepted.
+  3. Correcting a saved reference silently cancelled the follow-up reminder and turned a
+     user-resolved step back into waiting. Corrections now keep state and reminder; first
+     report still clears the attempt reminder. Report saves/updates are in journey_history.
+  4. Mistyped years (e.g. 0026) created cases. Server rejects years before 2000; the form
+     bounds the pickers and warns when a payment is over a year old.
+  5. Forward navigation to the check screen could use a stale amount. Amount is re-parsed
+     and all steps re-validated at confirmation.
+  6. Correction form stayed open after saving; the saved reference was not shown. Form now
+     closes; the step shows the saved reference or "pending".
+  7. Step labels "no answer"/"waiting" were ambiguous. Now "No answer · not reported yet",
+     "Reported · awaiting reply", "Reported · you marked resolved" (user-reported only).
+  8. Cancelling a reminder gave no feedback. It now confirms; status is unchanged.
+  9. Deleted case left a dead "Continue my report" link. Cleared on not-found.
+  10. At 360px the suggested-next-step button overflowed horizontally; now wraps.
+  11. Quick incident choices overwrote typed descriptions; they now prepend.
+- Checks: 39 backend tests passed (4 new); production build passed; checkpoint ZIP hashes
+  match C03/C05 manifests. Screenshot: docs/screenshots/c06-phone-360-audit.jpg.
+- Not tested: real phone hardware, screen readers, calendar import, independent users.
+
 ## 2026-10-13 - C05: guided delay-aware workflow
 - Added persisted journey states, explanation-based next action and reminder times.
 - No-answer/later does not mark reported. Waiting/resolved needs an actual saved report.
