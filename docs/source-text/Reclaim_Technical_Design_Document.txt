@@ -1,0 +1,397 @@
+--- PAGE 1 ---
+Reclaim
+Technical Design Document · First-5-Days Recovery Assistant for Cyber-Fraud Victims
+EVENT
+Founder's Code 2026
+DOMAIN
+Cybersecurity & Digital
+Safety
+VERSION
+1.0 · 13 Oct 2026
+STATUS
+Prototype design
+1. Purpose and scope
+2. Problem and requirements
+3. System overview
+4. Component design
+5. Core ﬂows
+6. Data model
+7. API reference
+8. Eligibility engine
+9. AI evidence pipeline
+10. Document generation
+11. Security and privacy
+12. Reliability and demo safety
+13. Production architecture
+14. Testing strategy
+15. Limitations and roadmap
+16. Glossary and references
+1. Purpose and scope
+This document describes the technical design of Reclaim: a mobile-ﬁrst web application that guides a victim of UPI or
+banking fraud through the three oﬃcial reports — the 1930 helpline, a complaint on the National Cyber Crime
+Reporting Portal (NCRP), and a written report to their bank — and tracks the deadlines that decide whether money
+can be held and whether the victim qualiﬁes for compensation. A companion bank dashboard gives the bank's fraud
+team a live view of incoming, complete cases.
+It covers the hackathon prototype in detail and the intended production architecture at design level. Build sequencing
+is in the separate Implementation Plan.
+2. Problem and requirements
+2.1 Problem
+About 51% of UPI-fraud victims ﬁle no oﬃcial complaint; users describe reporting as complex (LocalCircles survey,
+32,000+ responses, Jun 2025).
+Recovery is low when reporting is late — Odisha recovered about 2.7% of ~₹370 crore lost in 2023–25, with police
+citing delayed reporting.
+Recovery needs three separate actions in three places; the 1930 call issues a 14-digit acknowledgement that must
+then be used to complete the NCRP complaint.
+From 1 Jan 2027, RBI's Third Amendment Directions (2026) compensate small-value frauds (loss ≤ ₹50,000; 85% of
+net loss, max ₹25,000; once per lifetime) only if the fraud is reported to both the bank and NCRP/1930 within 5
+calendar days. Banks must resolve domestic fraud complaints within 45 days.
+2.2 Functional requirements
+ID Requirement
+FR-1 Accept a payment screenshot or bank SMS and extract amount, UTR, date-time, bank, payment app, method and payee.
+Reclaim  Technical Design Document v1.0 · 1/8
+
+--- PAGE 2 ---
+ID Requirement
+FR-2 Let the user conﬁrm or edit every extracted ﬁeld; support manual entry and multiple transactions.
+FR-3 Classify the scam type from the user's description, with a conﬁdence score.
+FR-4 Evaluate RBI compensation eligibility and compute the 5-day and 45-day deadlines.
+FR-5 Generate a 1930 call script, an NCRP complaint description (≥ 200 characters) and a bank dispute letter.
+FR-6 Record acknowledgement numbers for each report and show a case timeline.
+FR-7 Produce a downloadable case pack (PDF).
+FR-8 Show the bank a live list of cases, deadline status and scam-type distribution.
+FR-9 Oﬀer English and Tamil interfaces, and voice input for the description.
+2.3 Non-functional requirements
+ID Requirement Target (prototype)
+NFR-
+1
+Demo reliability Full ﬂow works with no internet and no AI key (cached ﬁxtures, manual path)
+NFR-
+2
+Extraction
+latency
+Cache < 100 ms; AI call bounded by a 12 s timeout
+NFR-
+3
+Privacy No OTP/PIN/password ever collected; account numbers masked; no images or descriptions written
+to logs
+NFR-
+4
+Usability Usable at 360 px width; tap targets ≥ 44 px; one primary action per screen
+NFR-
+5
+Correctness Eligibility rules covered by unit tests; all times stored in UTC, shown in IST
+2.4 Explicit non-goals
+Reclaim does not ﬁle complaints on anyone's behalf, does not access bank accounts, does not promise refunds, and
+never handles or charges victims' money.
+3. System overview
+Victim app
+React · mobile web · /
+Bank dashboard
+React · /bank · polls 2 s
+Demo stage
+/stage · both views
+FastAPI backend
+Extract router (AI + cache)
+Cases router
+Eligibility engine
+Document generator
+Case pack PDF builder
+Demo clock
+Gemini Flash
+vision + JSON
+Fixture cache
+sha256 → JSON
+SQLite
+cases table
+Figure 1. Prototype architecture — one backend process, one SQLite ﬁle, three web views.
+Reclaim  Technical Design Document v1.0 · 2/8
+
+--- PAGE 3 ---
+Layer Technology Reason
+Frontend React, Vite, TypeScript, Tailwind CSS, React Router, Zustand,
+lucide-react
+Fast to build, typed, mobile-ﬁrst styling
+Backend Python, FastAPI, Pydantic, SQLModel, Uvicorn Typed request/response models, auto docs at
+/docs
+Storage SQLite Zero setup; single ﬁle; adequate for prototype
+load
+AI Gemini Flash (free tier) via google-genai Reads images and returns schema-constrained
+JSON
+PDF ReportLab with a TTF font that includes the ₹ glyph Deterministic server-side rendering
+Voice Browser Web Speech API (en-IN, ta-IN) No key, no server cost
+4. Component design
+Component Responsibility Key interfaces
+Extract router Accepts image + description; runs the evidence pipeline (§9);
+returns ﬁelds, per-ﬁeld conﬁdence, scam type
+POST /api/extract
+Cases router Creates, reads and updates cases; recomputes eligibility on every
+read; marks completion
+/api/cases, /api/cases/{id}
+Eligibility engine Pure function implementing RBI rules (§8); no I/O; fully unit-tested evaluate(...) → Eligibility
+Document
+generator
+Deterministic templates for the three oﬃcial texts and follow-up
+letters (§10)
+GET /api/cases/{id}/docs
+PDF builder Renders the case pack GET /api/cases/{id}/pack.pdf
+Demo clock Provides now(); in demo mode oﬀsets real time from a ﬁxed
+start (default 12 Jan 2027, 8:01 PM IST)
+clock.now(), POST
+/api/demo/clock
+Victim app Screens S1–S9: safety check, upload, conﬁrm, case home with
+countdown, three report steps, done, follow-up
+REST over JSON
+Bank dashboard KPI tiles, live case table, deadline colouring, scam-type bars, case
+drawer
+Polls /api/cases and /api/stats
+5. Core ﬂows
+5.1 Victim journey (request sequence)
+# User action Frontend Backend
+1 Opens link, answers safety
+question
+S1 → S1b (if ongoing) → S2 —
+2 Uploads screenshot,
+describes incident
+Shows "Reading your
+screenshot…"
+POST /api/extract → cache → AI → manual
+3 Conﬁrms or edits ﬁelds S3 highlights ﬁelds with
+conﬁdence < 0.7
+POST /api/cases → stores case, returns eligibility
+4 Sees plan and countdown S4 ticks every second from
+deadline_at
+GET /api/cases/{id}, /docs
+5 Calls 1930, enters 14-digit
+ack
+S5 validates ^\d{14}$ PATCH sets ack_1930, ack_1930_at
+6 Files on NCRP, enters ack S6 copy box with character count PATCH sets ack_portal
+7 Emails bank, enters ticket
+no.
+S7 mailto: pre-ﬁlled PATCH sets bank_ref; all three done →
+completed_at, status complete
+8 Downloads case pack S8 GET /pack.pdf
+Reclaim  Technical Design Document v1.0 · 3/8
+
+--- PAGE 4 ---
+# User action Frontend Backend
+9 (Bank) sees the case Dashboard row appears,
+highlights, turns green
+GET /api/cases every 2 s
+5.2 Case lifecycle
+draft in_progress complete closed
+missed
+case created 3 refs saved outcome logged
+5-day deadline passes with reports incomplete
+Figure 2. Case states. A missed case keeps all features; only the compensation message changes.
+6. Data model
+Case
+  id                 TEXT  PK   e.g. "RC-7F3K2"
+  status             TEXT       draft | in_progress | complete | missed | closed
+  fraud_at           DATETIME   UTC, earliest transaction time
+  amount_total       INTEGER    rupees, sum of transactions
+  transactions       JSON       [{amount, utr, at, app, method, payee_id, confidence{}}]
+  bank, payment_app, method, payee_id   TEXT
+  scam_type          TEXT       fake_kyc | job_task | investment | digital_arrest |
+                                fake_customer_care | sextortion | loan_app | other
+  scam_confidence    REAL       0..1
+  incident_summary   TEXT       one-paragraph summary (user text or AI-cleaned)
+  prior_compensation BOOLEAN
+  language           TEXT       en | ta
+  ack_1930, ack_1930_at, called_pending
+  ack_portal, ack_portal_at
+  bank_ref, bank_reported_at
+  completed_at       DATETIME
+  followup_state     TEXT       none | day30_no_reply | resolved | ombudsman_drafted
+  source             TEXT       cache | ai | manual
+  is_demo_seed       BOOLEAN
+  created_at, updated_at
+Derived on read (never stored): eligibility and steps, so a change in the clock or a rule constant is reﬂected
+immediately.
+7. API reference
+Method Path Purpose
+GET /api/health Liveness, demo mode ﬂag, current (demo) time
+POST /api/extract Multipart image (≤ 10 MB, PNG/JPEG/WebP), description,
+language → ﬁelds, conﬁdences, scam type, source
+POST /api/cases Create a case from conﬁrmed ﬁelds → CaseOut
+GET /api/cases/{id} Case with recomputed eligibility and step states
+PATCH /api/cases/{id} Save ack_1930, called_pending, ack_portal, bank_ref,
+followup_state
+Reclaim  Technical Design Document v1.0 · 4/8
+
+--- PAGE 5 ---
+Method Path Purpose
+GET /api/cases/{id}/docs Generated 1930 script, NCRP text (+ char count), bank subject/body, follow-
+up drafts
+GET /api/cases/{id}/pack.pdf Case pack PDF
+GET /api/cases Dashboard list, newest ﬁrst
+GET /api/stats Totals, compensation exposure, scam-type counts, due-in-24 h, missed,
+completion rate
+POST /api/demo/clock,
+/api/demo/reset
+Demo-mode only: move the clock, reset and reseed
+// CaseOut (abridged)
+{
+  "id": "RC-7F3K2", "status": "in_progress", "amount_total": 18000,
+  "fraud_at": "2027-01-12T14:12:00Z", "scam_type": "fake_kyc", "scam_confidence": 0.92,
+  "eligibility": { "status": "ELIGIBLE_PENDING", "max_compensation": 15300,
+                   "deadline_at": "2027-01-17T14:12:00Z", "seconds_left": 430860,
+                   "bank_resolve_by": "2027-02-26", "message_key": "elig.pending" },
+  "steps": { "1930":   { "done": true,  "ref": "31012270045871", "at": "..." },
+             "portal": { "done": false, "ref": null, "at": null },
+             "bank":   { "done": false, "ref": null, "at": null } }
+}
+8. Eligibility engine
+A pure function with all rule constants in one module, so policy changes are a one-line edit with tests.
+RULE_EFFECTIVE_FROM = 2027-01-01   COMP_MAX_LOSS = 50,000   COMP_RATE = 0.85
+COMP_CAP = 25,000                   REPORT_WINDOW_DAYS = 5   BANK_RESOLVE_DAYS = 45
+deadline_at = fraud_at + 5 days
+status = first match of:
+  fraud_at.date < RULE_EFFECTIVE_FROM                     → NOT_APPLICABLE_DATE
+  prior_compensation                                       → NOT_APPLICABLE_PRIOR
+  amount_total > COMP_MAX_LOSS                            → NOT_APPLICABLE_AMOUNT
+  now > deadline_at and not (NCRP and bank before deadline) → WINDOW_MISSED
+  NCRP (1930 or portal) and bank both reported before deadline → ELIGIBLE_COMPLETE
+  otherwise                                                → ELIGIBLE_PENDING
+max_compensation = min(round(0.85 × amount_total), 25,000) for ELIGIBLE_*; else 0
+Test case Expected
+₹18,000 on 12 Jan 2027, nothing reported, 19 min later ELIGIBLE_PENDING · ₹15,300
+Same, all three reported on day 1 ELIGIBLE_COMPLETE · ₹15,300
+₹40,000 ₹25,000 (cap)
+₹60,000 NOT_APPLICABLE_AMOUNT
+Fraud on 20 Dec 2026 NOT_APPLICABLE_DATE
+Day 6, bank not reported WINDOW_MISSED
+The engine produces an estimate. Final eligibility, including any negligence assessment, is the bank's decision; the UI
+states this.
+Reclaim  Technical Design Document v1.0 · 5/8
+
+--- PAGE 6 ---
+9. AI evidence pipeline
+Image + text
+from S2
+1. Cache
+sha256 lookup
+2. Gemini
+12 s timeout
+3. Manual entry
+always available
+miss fail / timeout
+hit → validate → return ok → validate → return
+Figure 3. Fallback ladder — the demo can never stall on an AI call.
+Single call: the image and the user's description are sent together; the model returns extraction ﬁelds, per-ﬁeld
+conﬁdence, scam type, scam conﬁdence and a one-sentence summary as schema-constrained JSON. Unknown
+values must be null — the prompt forbids guessing digits.
+Validation: UPI UTR must be 12 digits; amount must be a positive integer; UPI IDs must match ^[\w.\-]
+{2,256}@[a-zA-Z]{2,64}$; failures lower conﬁdence instead of rejecting.
+Human in the loop: ﬁelds under 0.7 conﬁdence are highlighted, and nothing is generated until the user conﬁrms
+every ﬁeld.
+Keyword fallback classiﬁer: if the AI is unavailable, keywords map the description to a scam type (for example CBI,
+customs, arrest, parcel → digital arrest) with conﬁdence 0.6.
+Model choice: the model ID is conﬁguration, not code, so it can be swapped for a paid or self-hosted model (e.g.
+Gemma) without changes.
+10. Document generation
+Oﬃcial texts are produced from deterministic templates, not free-form AI output, so every number in them is exactly
+what the user conﬁrmed. Only the incident summary may be AI-cleaned, and it falls back to the user's own words.
+Document Key rules
+1930 call
+script
+Amount, method, date-time, UTR, payee, bank, one-line summary; ends by asking for the acknowledgement
+number
+NCRP
+description
+At least 200 characters; characters # $ @ ^ * removed; includes the 1930 acknowledgement if available
+Bank letter Subject with amount and UTR; both acknowledgement numbers; requests hold, reference number and
+processing under the 2026 RBI directions; only last 4 account digits
+Day-30 / Day-
+45
+Reminder to bank; draft Ombudsman complaint marked "verify current process before submitting"
+11. Security and privacy
+11.1 Principles
+Data minimisation: collect only what the three reports need; never OTP, PIN, password, card number or full
+account number.
+Purpose limitation and consent: data is used only to prepare the victim's reports; a consent line is shown before
+upload.
+User control: delete-my-case removes the case and evidence.
+No silent action: Reclaim never submits to any government or bank system.
+Reclaim  Technical Design Document v1.0 · 6/8
+
+--- PAGE 7 ---
+These follow the principles of India's Digital Personal Data Protection Act; formal compliance would be assessed
+before production.
+11.2 Threat model
+Threat Mitigation
+Victim tricked by a fake "Reclaim"
+asking for money
+Distribution only via bank/police channels; persistent "we never charge or ask for OTPs"
+banner; recovery-scam warning
+Sensitive data leakage to third-party
+AI
+Prototype uses only fabricated sample data; production uses a paid enterprise tier or a
+self-hosted model inside the bank's network
+Malicious uploads MIME and size checks (≤ 10 MB, images only); ﬁles processed in memory, not executed
+or served back
+Abuse of AI endpoint / cost Rate limiting per IP; cache-ﬁrst design
+Data exposure via logs Structured logs exclude images, descriptions and identiﬁers
+Unauthorised dashboard access Prototype is demo-only; production uses bank SSO with role-based access and audit logs
+Secrets in repository .env git-ignored; example ﬁles only
+12. Reliability and demo safety
+Demo clock: the RBI rule applies from 1 Jan 2027, but the event is in Oct 2026. In demo mode, now() starts at 12
+Jan 2027, 8:01 PM IST and advances in real time; the stage can jump to day 4, day 30 or reset.
+Oﬄine operation: ﬁxtures cover all sample screenshots; the full ﬂow runs with Wi-Fi oﬀ and no API key.
+Seeded dashboard: about 12 fabricated cases across scam types and deadline states, so the bank view is never
+empty.
+Polling over websockets: a 2-second poll is simpler and survives reconnects.
+Time handling: stored in UTC, displayed in Asia/Kolkata, tested around midnight boundaries.
+13. Production architecture (target)
+Victim phones
+Bank analysts
+Bank cloud / VPC (per tenant)
+Web app (CDN) API service Self-hosted LLM
+PostgreSQL Encrypted storage Reminder worker
+SMS /
+WhatsApp
+Bank SSO /
+audit
+Figure 4. Target deployment — each bank runs Reclaim in its own environment so victim data stays with the bank.
+Concern Prototype Production
+Database SQLite PostgreSQL with encryption at rest, per-tenant isolation
+Evidence ﬁles In memory Encrypted object storage with retention policy
+AI Gemini free tier, fake
+data
+Paid enterprise tier or self-hosted model in the bank's network
+Reclaim  Technical Design Document v1.0 · 7/8
+
+--- PAGE 8 ---
+Concern Prototype Production
+Reminders Simulated in UI Background worker + SMS/WhatsApp provider
+Dashboard
+auth
+None (demo) Bank SSO, role-based access, audit trail
+Integration Standalone link Deep link from the bank app's "Report fraud"; case export API into the bank's
+complaint system
+14. Testing strategy
+Level What
+Unit Eligibility engine (all rule paths), ﬁeld validation and masking, document templates (≥ 200 chars, forbidden
+characters removed), keyword classiﬁer
+Fixture Each sample screenshot's extraction compared ﬁeld-by-ﬁeld with its expected JSON
+API Create → read → patch → complete; eligibility recomputed after demo-clock jumps
+End-to-
+end
+Scripted run of the demo story on a 360 px viewport; dashboard reﬂects each step within 2 s
+Failure No network, no API key, unknown image, oversized ﬁle, invalid acknowledgement numbers
+15. Limitations and roadmap
+No public API exists to submit NCRP complaints; ﬁling remains a user action by design.
+Eligibility logic is based on secondary summaries of the RBI directions and must be checked against the oﬃcial
+notiﬁcation; rules for non-commercial banks may diﬀer.
+Extraction accuracy depends on screenshot quality; the conﬁrm step is mandatory for that reason.
+Roadmap: more Indian languages, WhatsApp-native ﬂow, bank complaint-system integrations, insurer claim-pack
+API, aggregated fraud-trend reports for banks and law enforcement.
+16. Glossary and references
+Term Meaning
+1930 National cyber-fraud helpline; issues an acknowledgement number for ﬁnancial-fraud reports
+NCRP National Cyber Crime Reporting Portal, cybercrime.gov.in
+UTR Unique Transaction Reference; 12 digits for UPI payments
+Case pack Reclaim's PDF bundle of a case's details, references and texts
+References: RBI (Commercial Banks – Responsible Business Conduct) Third Amendment Directions, 2026 (summaries by ELP Law
+and corplawupdates.in) · LocalCircles UPI-fraud survey via Business Standard, Jun 2025 · the420.in, Odisha cyber-fraud data 2023–
+25 and 1930 helpline explainer · RBL Bank guide to NCRP reporting · Gemini API free-tier terms summary, agentdeals.dev.
+Reclaim  Technical Design Document v1.0 · 8/8

@@ -1,0 +1,67 @@
+--- PAGE 1 ---
+FOUNDER'S CODE 2026 | STUDENT FAQ
+Page 1
+FOUNDER'S CODE 2026
+Hackathon FAQs | Simple answers for every participant
+1 TEAMS & PASSES
+1. What types of teams can join?
+Tech Only, Business Only, and Tech + Business teams.
+2. I have a Tech Pass. Must I know business?
+No. Focus on building the product. The Hackathon Organizing Team will arrange grouping or merging with business
+participants where needed.
+3. I have a Business Pass. Must I know coding?
+No. Focus on the customer problem, market, revenue idea, and how to reach users. The organizing team will arrange
+grouping with tech participants where needed.
+4. Who will merge the teams?
+The Hackathon Organizing Team. You do not need to find a partner team yourself.
+5. What if there are not enough Business Only teams?
+An existing Tech team member may represent the business side. The organizing team will confirm the final grouping.
+6. We have four Tech members. Must we add a fifth?
+Not necessarily. If one member can take the business role, an extra member may not be needed. Any addition must
+follow the final team-size rules.
+7. Why is the Tech + Business Pass Rs. 200 more?
+The organizers will confirm the exact extra benefits and eligibility rules. Do not assume that taking a business role
+changes your paid pass.
+2 TOPICS & SUBMISSIONS
+8. Will we receive a fixed problem statement?
+You will receive approved domains and example ideas. Your team must choose a specific real-life problem to solve.
+9. How many ideas must we submit?
+Submit 3 topic ideas. They may all be from one domain or from different domains.
+10. What goes into each topic proposal?
+One page: topic title, domain, problem, solution, technical plan, business plan, expected impact, and risks.
+11. What if our topic is not approved?
+Jury approval is compulsory. A team cannot continue with an unapproved problem statement; follow the organizers'
+instructions on any permitted revision.
+3 JUDGING & DEVELOPMENT
+12. How will Tech Only participants be judged?
+Mainly on their technical work: working features, quality of code, design, and how well they explain their solution.
+13. How will Business Only participants be judged?
+Mainly on customer understanding, market research, business model, how they will reach users, and their pitch.
+14. How will combined teams be judged?
+On both the product and the business plan. The final presentation should explain what was built and why people
+would use it.
+
+
+--- PAGE 2 ---
+FOUNDER'S CODE 2026 | STUDENT FAQ
+Page 2
+15. What work gets the most importance?
+Work actually completed during the hackathon gets the highest importance. Keep clear proof of your progress.
+16. Can we use old code, AI, or open-source tools?
+Yes. Clearly show what existed before the event and what you built during it. Using ready-made tools alone will not
+earn the same credit as original work.
+17. Do we need GitHub?
+Yes. Keep your code organized, use clear commit messages, and show your development history.
+18. Does security or accessibility matter?
+Yes. The jury also values safe, private, affordable, and accessible solutions. Technical scoring is planned as 80%
+core work and 20% jury assessment of meaningful quality improvements.
+19. Are Tech Only teams eligible for the overall prize?
+The organizers will confirm the final championship eligibility and common judging rules. Different tracks have different
+areas of focus.
+4 ON THE EVENT DAY
+20. What should we bring?
+Your laptop, charger, extension cord, and access to your proposal, slides, and GitHub account.
+21. Can the jury give surprise tasks?
+Yes. Be ready to explain your work and respond to additional challenges announced during the event.
+Remember: Build something useful, show what you made during the event, and explain both the technology and the business
+idea.

@@ -1,0 +1,410 @@
+--- PAGE 1 ---
+FOUNDER’S  CODE  
+Participant
+ 
+Instructions
+ 
+&
+ 
+Guidelines
+ 
+Dates: 14–15  October  2026  Venue:  Sri  Muthukumaran  Institute  of  Technology  (SMIT),  Chennai  Duration:  24-Hour  Hackathon  
+Welcome  to  Founder’s  Code!  Get  ready  for  24  hours  of  innovation,  problem-solving,  
+collaboration,
+ 
+and
+ 
+building
+ 
+solutions
+ 
+that
+ 
+matter.
+ 
+Please
+ 
+read
+ 
+the
+ 
+following
+ 
+instructions
+ 
+carefully
+ 
+to
+ 
+ensure
+ 
+a
+ 
+smooth
+ 
+experience.
+ 
+1.  Reporting  &  Registration  
+●  Registration  starts  from  8:30  AM  on  14  October  2026 .  ●  Complete  your  registration  and  attendance  verification  upon  arrival.  ●  Carry  a  valid  college  ID  card  for  verification.  ●  Ensure  all  team  members  are  present  and  ready  for  the  inauguration  and  opening  
+session.
+ 
+2.  What  You  Must  Carry  
+●  Laptop  -  mandatory  for  accessing  the  PET  (Placement  Employability  Test),  AI  Mock  
+Interview,
+ 
+and
+ 
+Career
+ 
+Passport
+ 
+activities.
+ ●  Laptop  charger  and  any  essential  accessories.  ●  College  ID  card  and  registration  confirmation.  ●  Personal  essentials  required  for  the  24-hour  event.  
+3.  Hackathon  Guidelines  
+●  The  hackathon  begins  at  11:30  AM  on  14  October  and  concludes  at  11:30  AM  on  
+15
+ 
+October
+.
+ ●  Work  collaboratively  with  your  registered  team  throughout  the  competition.  ●  Understand  the  challenge  statement  and  ensure  your  solution  addresses  the  problem  
+effectively.
+ ●  Keep  track  of  checkpoints,  jury  evaluations,  announcements,  and  submission  
+deadlines.
+ ●  Ensure  your  final  solution  is  submitted  within  the  stipulated  time.  Late  submissions  
+may
+ 
+not
+ 
+be
+ 
+considered.
+ ●  Be  prepared  to  explain  your  solution,  demonstrate  your  prototype,  and  justify  your  
+approach
+ 
+during
+ 
+jury
+ 
+evaluations.
+ 
+4.  Activities  &  Participant  Experiences  
+Participants  can  explore  the  following  activities  during  designated  slots:  
+●  PET  (Placement  Employability  Test):  Assess  your  employability  skills.  ●  AI  Mock  Interview:  Practise  interviews  and  receive  feedback.  
+
+--- PAGE 2 ---
+●  Career  Passport:  Explore  your  career-readiness  journey.  ●  Career  Guidance:  Gain  insights  into  career  opportunities  and  industry  expectations.  ●  Call  a  Friend:  Participate  in  the  designated  engagement  activity.  
+These  activities  will  operate  around  the  hackathon  schedule  and  critical  evaluation  
+checkpoints.
+ 
+Please
+ 
+follow
+ 
+on-ground
+ 
+announcements
+ 
+for
+ 
+timings
+ 
+and
+ 
+availability.
+ 
+5.  What  Defines  a  Winning  Team?   
+At  Founder’s  Code,  the  winning  team  is  decided  based  on  the  combined  Tech  and  Business  
+performance.
+ 
+A
+ 
+team
+ 
+cannot
+ 
+compete
+ 
+with
+ 
+only
+ 
+a
+ 
+Tech
+ 
+component;
+ 
+every
+ 
+team
+ 
+must
+ 
+have
+ 
+representation
+ 
+from
+ 
+both
+ 
+tracks.
+ 
+If  your  team  is  currently  registered  under  the  Tech  Track  only,  you  must  do  ONE  of  the  
+following
+ 
+before
+ 
+competing:
+ 
+1.  Restructure  your  existing  team:  Assign  one  of  your  current  team  members  to  
+represent
+ 
+the
+ 
+Business/Sales
+ 
+Track.
+ 2.  Add  one  additional  member:  Include  an  extra  team  member  to  represent  the  
+Business/Sales
+ 
+Track.
+ 
+The  Business/Sales  representative  must  contribute  to  the  business  strategy,  market  
+research,
+ 
+feasibility,
+ 
+and
+ 
+commercial
+ 
+potential
+ 
+of
+ 
+the
+ 
+solution.
+ 
+Important:  Both  Tech  and  Business  contributions  are  essential.  The  winner  will  be  the  
+team
+ 
+that
+ 
+brings
+ 
+both
+ 
+together
+ 
+to
+ 
+build
+ 
+a
+ 
+solution
+ 
+that
+ 
+is
+ 
+technically
+ 
+strong
+ 
+and
+ 
+business-ready.
+ 
+6.  Code  of  Conduct  
+●  Maintain  professional  behaviour  and  respect  fellow  participants,  mentors,  jury  
+members,
+ 
+and
+ 
+organisers.
+ ●  Follow  the  instructions  provided  by  the  organising  team  and  college  coordinators.  ●  Use  the  venue,  equipment,  and  facilities  responsibly.  ●  Do  not  engage  in  plagiarism,  misrepresentation,  or  unauthorised  use  of  another  
+team's
+ 
+work.
+ ●  Keep  your  workspace  clean  and  respect  the  venue's  rules.  ●  Report  any  technical  issues  or  concerns  to  the  organising  team  promptly.  
+7.  Important  Reminders  
+●  Stay  updated  with  official  communications  and  on-ground  announcements.  ●  Keep  your  laptop  charged  and  carry  your  charger.  ●  Plan  your  work  around  the  scheduled  checkpoints  and  final  submission.  ●  Coordinate  with  your  teammates  and  manage  your  time  effectively.  ●  Follow  the  organisers'  instructions  regarding  food,  breaks,  Wi-Fi  access,  and  other  
+event
+ 
+facilities.
+ 
+We  look  forward  to  seeing  you  at  Founder’s  Code  2026!  
+
+--- PAGE 3 ---
+Topic  domains 
+ 1.  Rural  Healthcare  2.  Skill  Gap  and  Youth  Employability  3.  Cyber  security   4.  Environmental  Sustainability    Explanation  of  the  domains  1.  Rural  Healthcare  Improve  access  to  essential  healthcare  information  and  services  for  rural  and  underserved  
+communities.
+  Examples:  health-service  navigation,  maternal  health  follow-up  reminders,  multilingual  
+preventive-care
+ 
+information,
+ 
+community
+ 
+health-worker
+ 
+support.
+ 
+Things
+ 
+to
+ 
+Keep
+ 
+in
+ 
+Mind:
+ 
+No
+ 
+unsupported
+ 
+diagnosis,
+ 
+treatment
+ 
+advice
+ 
+or
+ 
+autonomous
+ 
+medical
+ 
+decisions.
+  2.  Skill  Gap  &  Youth  Employability  Address  the  mismatch  between  young  people’s  skills  and  real  employment  opportunities.   Examples:  skills-gap  mapping,  personalized  learning  pathways,  interview  readiness,  local  
+job
+ 
+discovery,
+ 
+inclusive
+ 
+vocational
+ 
+training.
+ Things  to  Keep  in  Mind:  Avoid  discriminatory  hiring  recommendations;  explain  matching  
+criteria.
+  3.  Cybersecurity  &  Digital  Safety  Protect  individuals,  businesses  and  communities  from  cyber  threats,  online  fraud  and  digital  
+security
+ 
+risks.
+  Examples:  phishing  and  scam  detection,  cyber-awareness  training,  digital  identity  protection,  
+fraud-reporting
+ 
+assistance,
+ 
+password-security
+ 
+assessment,
+ 
+cybersecurity
+ 
+readiness
+ 
+for
+ 
+small
+ 
+businesses,
+ 
+AI-powered
+ 
+threat
+ 
+monitoring.
+ Things  to  Keep  in  Mind:  Ensure  data  privacy,  responsible  handling  of  sensitive  information  
+and
+ 
+ethical
+ 
+security
+ 
+practices.
+ 
+Solutions
+ 
+must
+ 
+not
+ 
+enable
+ 
+unauthorized
+ 
+access,
+ 
+surveillance
+ 
+or
+ 
+offensive
+ 
+cyberattacks.
+  4.  Environment  &  Sustainability  Enable  communities  and  organizations  to  reduce  waste,  conserve  resources  and  improve  
+environmental
+ 
+outcomes.
+  Examples:  waste  segregation  guidance,  water-leak  reporting,  energy-use  optimization,  
+pollution
+ 
+hotspot
+ 
+mapping,
+ 
+circular-economy
+ 
+solutions.
+ Things  to  Keep  in  Mind:  Use  credible  environmental  assumptions  and  define  measurable  
+outcomes.
+   
+
+--- PAGE 4 ---
+Hackathon  –  Problem  Statement  Submission  Format   Each  team  must  submit  3  proposed  problem  statements  from  the  5  approved  domains.  All  3  
+can
+ 
+belong
+ 
+to
+ 
+the
+ 
+same
+ 
+domain,
+ 
+different
+ 
+domains,
+ 
+or
+ 
+any
+ 
+combination.
+  Each  problem  statement  must  be  submitted  as  a  separate  1-page  proposal,  covering  both  
+the
+ 
+technical
+ 
+solution
+ 
+and
+ 
+business
+ 
+viability.
+  Submission  will  be  done  on  Prosculpt.ai portal.   Example:                   Format  of  the  PDF  to  upload  in  the  Prosculpt.ai portal   1-Page  Proposal  Template  –  Headers   
+1.
+ 
+Topic
+ 
+Title
+ 2.  Domain  Selection  3.  Problem  Statement  –  What  problem  are  you  solving?  4.  Proposed  Solution  –  What  is  your  idea?  5.  Technical  Approach  –  How  will  you  build  it?     -  Technology  Stack     -  Key  Features     -  Prototype  /  MVP  Feasibility  6.  Business  Approach  –  How  will  it  succeed?     -  Target  Customers  /  Users     -  Revenue  Model     -  Go-to-Market  (GTM)  Strategy  7.  Expected  Impact  –  What  difference  will  it  make?  8.  Challenges  &  Risks  –  What  are  the  potential  challenges  and  how  will  you  address  them?    

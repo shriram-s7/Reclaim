@@ -1,0 +1,73 @@
+--- PAGE 1 ---
+Reclaim
+ FOUNDER'S CODE 2026
+ 1-Page Proposal
+The First-5-Days Recovery Assistant for Cyber-Fraud Victims
+1. Topic Title: Reclaim – First-5-Days Recovery Assistant for Cyber-Fraud Victims
+2. Domain Selection: Cybersecurity & Digital Safety
+3. Problem Statement
+After a UPI or banking fraud, money is lost in the confused hours and days that follow. About 51% of UPI-fraud victims file no official
+complaint and users call the reporting process complex (LocalCircles, 32,000+ responses). Delay is costly: Odisha recovered only ~2.7%
+of ₹370 crore lost in 2023–25, with police citing late reporting (the420). Recovery needs three separate actions – a 1930 call, a full
+complaint on cybercrime.gov.in using the 14-digit acknowledgement, and a written bank report – which most victims never complete.
+From 1 Jan 2027, RBI's new directions compensate losses up to ₹50,000 (85%, max ₹25,000) only if reported to both 1930/NCRP and
+the bank within 5 calendar days. Most victims will not know this rule.
+4. Proposed Solution
+Reclaim is a mobile-first web app and WhatsApp assistant (no install) that turns panic into a complete, correctly filed case:
+ 1
+Read the evidence – victim uploads the UPI screenshot or bank SMS; Reclaim extracts UTR, amount, date-time, bank and
+scammer's UPI ID.
+ 2
+Act in the right order – a 1930 call script with every number asked, then a portal-ready NCRP complaint using the
+acknowledgement, then a bank dispute letter.
+ 3
+Never miss a deadline – live countdown to the 5-day compensation window, bank's 45-day resolution deadline, and RBI
+Ombudsman escalation if the bank stalls.
+ 4
+Stay safe – one evidence pack (PDF) for police and bank; warns against "recovery" agents who ask for money. Reclaim never
+handles funds.
+5. Technical Approach
+Technology Stack: React PWA (mobile-first) · WhatsApp Business API (Twilio) · FastAPI · OCR (Tesseract / Google Vision) + regex parsers
+for UTR, amount, UPI ID · LLM for scam-type tagging and complaint drafting · PostgreSQL · scheduled reminders (SMS/WhatsApp).
+Key Features: screenshot-to-case extraction · guided 3-step filing · 5-day and 45-day deadline tracker · acknowledgement-number
+vault · auto-generated complaint, bank letter and evidence PDF · Tamil/English · bank dashboard of cases and deadlines.
+Prototype / MVP Feasibility: OCR pipeline, document generator, countdown tracker and dashboard are buildable in 24 hours. Live
+demo: upload a sample fraud screenshot → fields fill in → countdown shows "Eligible: up to ₹25,000" → complaint, bank letter and
+1930 script appear in seconds. No access to bank accounts – only evidence the victim chooses to share.
+6. Business Approach
+Target Customers / Users: Payers – banks (must process these claims under the new RBI rules), cyber-insurers and fintech/UPI apps.
+Users – fraud victims (always free), police cyber cells.
+Revenue Model (estimates to validate):
+Revenue stream
+Price
+Basis
+Bank licence (white-label)
+₹6 lakh / bank / year
+Complete claims, faster 45-day resolution, audit trail
+Cyber-insurance claim packs
+₹150 / verified claim
+Clean, timestamped evidence cuts claim-processing time
+Fintech / UPI app integration
+₹2 lakh / year + usage
+"Report fraud" button that opens Reclaim inside the app
+Go-to-Market: victims don't find Reclaim – their bank sends it to them when they report fraud. Pilot with one mid-size bank before
+the Jan 2027 rule → add 1930/cyber-cell SMS links and branch QR posters → insurers → more banks.
+7. Expected Impact
+More victims complete all three reports on time · more cases eligible for RBI compensation · faster bank holds before money moves ·
+cleaner evidence for police. Measured by: % of cases with both acknowledgements within 5 days, time from fraud to first report, and
+% of eligible victims who receive compensation.
+8. Challenges & Risks
+Risk
+Mitigation
+No public API to auto-file on the portal
+Reclaim prepares and pre-fills; the victim submits – fully within official channels
+Sensitive financial data
+Victim-shared evidence only, masked account numbers, delete on request, no bank login
+Being mistaken for a "recovery" scam
+Free for victims, never handles money, distributed through banks and police links
+OCR errors on screenshots
+Victim confirms every extracted field before documents are generated
+Rule details may change
+Rules engine is configurable; RBI directions checked at launch
+Sources: LocalCircles UPI fraud survey via Business Standard (Jun 2025) · the420.in, Odisha cyber-fraud data (2023–25) · RBI (Commercial Banks – Responsible
+Business Conduct) Third Amendment Directions, 2026.
