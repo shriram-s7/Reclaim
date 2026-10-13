@@ -1,0 +1,24 @@
+{
+  "checkpoint": "C03",
+  "commit": "1075d02",
+  "date_ist": "2026-10-13",
+  "purpose": "Pre-event baseline; source and compiled frontend",
+  "excluded": [
+    "virtual environment",
+    "node_modules",
+    "database and case records",
+    "secrets"
+  ],
+  "archives": [
+    {
+      "file": "reclaim-c03-1075d02-build.zip",
+      "bytes": 89211,
+      "sha256": "eacc10e4cb943148898e346baab2b6eabc10cf49ea9ecd608bd81f73f876d9d5"
+    },
+    {
+      "file": "reclaim-c03-1075d02-source.zip",
+      "bytes": 2157178,
+      "sha256": "baa849224a1a715b692fa14a255835331b6edf16901d6c65ee85928ee45d4822"
+    }
+  ]
+}

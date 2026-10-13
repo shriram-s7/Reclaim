@@ -33,6 +33,8 @@ Server started in this chat; if unavailable rerun the script. It is loopback onl
 Run scripts/verify.ps1. Restricted execution may need permission for test-loop sockets.
 
 ## Next work
+Priority update: follow `docs/INTELLIGENCE_ROADMAP.md` I1-I5. The existing app is the
+baseline; the distinguishing evidence-to-action engine is not built yet.
 1. Finish presentation view QA; revised mobile save/next-step flow now verified.
 2. Add safe editing of confirmed case facts with explicit re-confirmation.
 3. Improve live extraction behind a configured provider; keep honest manual fallback.
@@ -46,3 +48,10 @@ Run scripts/verify.ps1. Restricted execution may need permission for test-loop s
 - No refund calculator or legal countdown: future policy remains unverified.
 - No GitHub remote, topic approval or submission confirmed. Work is pre-event.
 - Synthetic data only. Do not expose the unauthenticated demo queue publicly.
+
+## Immutable backup
+C03 source and compiled-frontend ZIPs: `D:\RECLAIM\checkpoints`.
+Source: `reclaim-c03-1075d02-source.zip`; build: `reclaim-c03-1075d02-build.zip`.
+Both passed ZIP integrity checks. Hashes: checkpoints/C03-MANIFEST.json.
+Restore instructions: checkpoints/RESTORE.md. No dependencies or case database included.
+These are same-drive backups, not off-device disaster recovery.

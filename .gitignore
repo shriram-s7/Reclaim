@@ -13,3 +13,4 @@ tmp/
 output/
 *.log
 *.tsbuildinfo
+checkpoints/*.zip

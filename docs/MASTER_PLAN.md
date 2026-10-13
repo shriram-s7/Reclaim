@@ -2,6 +2,10 @@
 
 Version 2, 13 October 2026. This is the active implementation plan.
 
+Update: `docs/INTELLIGENCE_ROADMAP.md` defines the next milestone. Intelligence is now
+the central hackathon deliverable, not optional polish. Preserve the local baseline while
+building source-linked evidence reconciliation and adaptive clarification.
+
 ## Product
 Reclaim helps a person facing payment fraud take immediate reporting actions, turn
 their evidence into a consistent case, and keep a record of follow-through.

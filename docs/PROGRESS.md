@@ -1,5 +1,12 @@
 # Progress log
 
+## 2026-10-13 - C04: immutable baseline backup and intelligence audit
+- Saved commit 1075d02 to source ZIP plus separate compiled frontend ZIP in checkpoints/.
+- Opened both archives, checked CRC integrity, and recorded SHA-256 hashes and restore steps.
+- Audited current capabilities: real local backend but no live vision/adaptive reasoning.
+- Added INTELLIGENCE_ROADMAP.md with acceptance gates and explicit completion uncertainty.
+- Next implementation: I1 evidence provenance, conflicts and re-confirmed case corrections.
+
 ## 2026-10-13 - C01: requirements reconciliation
 - Read all six source PDFs (31 pages); preserved originals and extracted text.
 - Confirmed four-person team; user prioritizes implementation.
