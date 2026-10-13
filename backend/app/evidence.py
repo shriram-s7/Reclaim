@@ -20,10 +20,18 @@ KINDS = {'receipt': 'payment receipt', 'bank_message': 'bank message', 'chat': '
          'screenshot': 'screenshot', 'other': 'document'}
 ORIGINS = {'pasted_text': 'Pasted text, read by local text rules (not AI)',
            'typed_by_user': 'Typed by you from your evidence',
-           'synthetic_fixture': 'Synthetic practice evidence (fixture, not AI reading)'}
+           'synthetic_fixture': 'Synthetic practice evidence (fixture, not AI reading)',
+           'ai_provider': 'Read by AI (Anthropic Claude). Check every value'}
 SAME_TIME = timedelta(minutes=10)   # time values this close are treated as one value
 NEAR_TIME = timedelta(hours=24)     # payments this close may be duplicates
-DONT_KNOW = {'id': 'unknown', 'label': 'I don’t know'}
+DONT_KNOW = {'id': 'unknown', 'label': 'Not sure'}
+LATER = {'id': 'later', 'label': 'Answer later'}
+WHY = {'possible_duplicate': 'So the same payment is not counted twice.',
+       'placement': 'So every payment you lost is included once, and nothing unrelated is added.',
+       'conflict': 'Your bank, 1930 and the portal should all receive the same details.',
+       'fill': 'Adding it now saves typing it again in every report.',
+       'unreadable': 'A reference helps the bank find the payment. It is optional.',
+       'enter': 'A payment needs an amount and a time before it can be added.'}
 ORDER = {'possible_duplicate': 0, 'placement': 0, 'conflict:amount_paise': 1, 'enter:amount_paise': 2,
          'conflict:occurred_at': 3, 'enter:occurred_at': 4, 'conflict:reference': 5,
          'conflict:payee': 6, 'unreadable:reference': 7, 'enter:reference': 7, 'fill:reference': 8,
@@ -90,12 +98,14 @@ def shown(field: str, value) -> str:
 def _fact(value, quote: str = '', status: str = 'read') -> dict:
     return {'value': value, 'status': status, 'quote': quote}
 
-def new_item(case: dict, kind: str, origin: str, facts: dict, text: str = '', label: str = '') -> dict:
+def new_item(case: dict, kind: str, origin: str, facts: dict, text: str = '', label: str = '', provider: dict | None = None) -> dict:
     evidence = case.setdefault('evidence', {'items': [], 'answers': {}})
     number = evidence.get('next', len(evidence['items']) + 1)
     evidence['next'] = number + 1
     item = {'id': f'E{number}', 'kind': kind, 'origin': origin, 'label': label or KINDS[kind].capitalize(),
             'text': text, 'facts': facts, 'added_at': utcnow().isoformat()}
+    if provider:
+        item['provider'] = provider
     evidence['items'].append(item)
     return item
 
@@ -151,7 +161,7 @@ def _read(item: dict) -> dict:
 def _source(item: dict, field: str | None = None) -> dict:
     fact = item['facts'].get(field) if field else None
     return {'evidence_id': item['id'], 'label': item['label'], 'origin': ORIGINS[item['origin']],
-            'quote': (fact or {}).get('quote', '')}
+            'quote': (fact or {}).get('quote', ''), 'quote_verified': (fact or {}).get('quote_verified')}
 
 def _payment_text(candidate: dict) -> str:
     parts = [shown('amount_paise', candidate.get('amount_paise'))]
@@ -207,9 +217,13 @@ def reconcile(case: dict) -> dict:
 
     def ask(question, answer=None):
         question['order'] = ORDER.get(question['kind'], 9)
+        question['why'] = WHY[question['kind'].split(':')[0]]
+        question['choices'] = question['choices'] + [LATER]
         if answer:
             answered.append({**question, 'answer': answer})
         else:
+            # "Answer later" keeps the question open, behind the others.
+            question['deferred'] = answers.get(question['id'], {}).get('choice') == 'later'
             questions.append(question)
 
     # 1. Place each evidence item. Nothing is linked or merged without the person's answer.
@@ -301,7 +315,7 @@ def reconcile(case: dict) -> dict:
                             'help': 'Choose the value from your bank statement or the original receipt if you can.',
                             'reasons': [], 'sources': [],
                             'choices': [{'id': f'value:{n}', 'label': shown(field, g['value']), 'value': g['value'],
-                                         'sources': [{k: s[k] for k in ('label', 'origin', 'quote')} for s in g['sources']]}
+                                         'sources': [{k: s.get(k) for k in ('label', 'origin', 'quote', 'quote_verified')} for s in g['sources']]}
                                         for n, g in enumerate(distinct)] + [DONT_KNOW]}
                 answer = answers.get(qid)
                 ok = answer and (answer['choice'] == 'unknown' or any(_same(field, g['value'], answer.get('value')) for g in distinct if answer.get('value') is not None))
@@ -320,7 +334,7 @@ def reconcile(case: dict) -> dict:
                 ask_fill = {'id': qid, 'kind': f'fill:{field}', 'payment': pid,
                             'text': f'Your evidence shows the {FIELD_NAMES[field]} {shown(field, value)}. Add it to {names[pid]}?',
                             'help': 'Check it against the original before adding it.', 'reasons': [],
-                            'sources': [{k: s[k] for k in ('label', 'origin', 'quote')} for s in distinct[0]['sources']],
+                            'sources': [{k: s.get(k) for k in ('label', 'origin', 'quote', 'quote_verified')} for s in distinct[0]['sources']],
                             'choices': [{'id': 'value:0', 'label': 'Yes, add it', 'value': value}, {'id': 'skip', 'label': 'No, leave it out'}, DONT_KNOW]}
                 answer = answers.get(qid)
                 ok = answer and answer['choice'] in ('value', 'skip', 'unknown')
@@ -366,7 +380,7 @@ def reconcile(case: dict) -> dict:
                         'transaction': new, 'evidence_ids': p['evidence_ids'], 'complete': not missing,
                         'after_text': ' · '.join(shown(f, new[f]) for f in FIELDS if new[f]),
                         'blocked': f"Needs the {' and '.join(missing)} before it can be added." if missing else ''})
-    questions.sort(key=lambda q: q['order'])
+    questions.sort(key=lambda q: (q['deferred'], q['order']))
     return {'questions': questions, 'answered': answered, 'changes': changes, 'unsure': unsure,
             'links': links, 'payment_names': names,
             'note': 'Rules-based checks of the evidence you added. Not AI, and not verification by a bank or authority.'}
@@ -451,3 +465,24 @@ def correct_facts(case: dict, data: FactsCorrection) -> None:
         raise ValueError('Nothing was changed.')
     commit(case, items, summary, 'manual')
     case.update(case_level)
+
+def settle_with_intake(case: dict, evidence_id: str) -> None:
+    """The person confirmed their facts while seeing this reading, so do not ask again.
+
+    The evidence is linked to payment 1, and wherever their confirmed value differs from
+    the reading, their confirmed value is kept. Answers are marked as coming from intake.
+    """
+    answers = case['evidence'].setdefault('answers', {})
+    stamp = {'answered_at': utcnow().isoformat(), 'by': 'intake_confirmation'}
+    answers[f'place:{evidence_id}'] = {'choice': 'same:T1', **stamp}
+    for _ in range(len(FIELDS) + 1):
+        open_questions = [q for q in reconcile(case)['questions'] if q.get('payment') == 'T1']
+        if not open_questions:
+            return
+        for question in open_questions:
+            kind = question['kind'].split(':')[0]
+            if kind == 'conflict':
+                saved = next(c for c in question['choices'] if any(s['label'] == 'Your saved details' for s in c.get('sources', [])))
+                answers[question['id']] = {'choice': 'value', 'value': saved['value'], **stamp}
+            else:
+                answers[question['id']] = {'choice': 'skip' if kind == 'fill' else 'unknown', **stamp}

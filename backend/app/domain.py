@@ -51,7 +51,8 @@ class CaseInput(BaseModel):
     reference: str = Field(default='', max_length=100)
     payee: str = Field(default='', max_length=200)
     description: str = Field(min_length=10, max_length=4000)
-    source: Literal['manual', 'sample', 'fixture', 'text'] = 'manual'
+    source: Literal['manual', 'sample', 'fixture', 'text', 'ai_provider'] = 'manual'
+    reading_id: str | None = Field(default=None, pattern=r'^[0-9a-f]{32}$')
     confirmed: Literal[True]
 
     _time = field_validator('occurred_at')(transaction_time)

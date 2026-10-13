@@ -1,5 +1,20 @@
 # Progress log
 
+## 2026-10-13 - C08a: AI evidence-reading adapter (not configured)
+- Checked configuration first: no Anthropic key/token in any environment scope, no `ant`
+  profile, provider flag unset. Live extraction cannot run and is not claimed.
+- Added official `anthropic` SDK 1.13.0 (pinned with its dependencies) and
+  backend/app/provider.py: strict schema, server re-validation, consent gate, timeout,
+  size limits, metadata stripping, null-for-unclear, quote grounding, calm manual fallback.
+- Endpoints: GET /api/extraction/status, POST /api/evidence/read (intake),
+  POST /api/cases/{id}/evidence/read; case creation can attach a reading (reading_id) and
+  does not re-ask what the person confirmed. Questions gain "why" and "Answer later".
+- Held-out synthetic set (10 images, 6 texts; visually checked, two truth errors fixed
+  before any run) and scripts/eval_extraction.py. Local rules: 11 correct, 11 correct-unknown,
+  2 missed, 0 wrong. Provider: not run (missing configuration).
+- Checks: 84 backend tests passed (28 new provider tests, fakes only; two safety rules
+  mutation-checked). See docs/AI_EXTRACTION.md.
+
 ## 2026-10-13 - C07: evidence reconciliation with adaptive clarification
 - New evidence model (candidate facts + source quote + read/unreadable) kept apart from
   confirmed payments; multiple payments with total; legacy cases normalised on read.
