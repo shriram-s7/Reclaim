@@ -1,0 +1,7 @@
+{
+  "commit": "c531a52",
+  "archive": "reclaim-c05-c531a52-source.zip",
+  "sha256": "43be96b317db12dd72d61a6c83f5be565f7edc61346114075924f2b8addba988",
+  "verified": "ZIP integrity passed",
+  "restore": "Use checkpoints/RESTORE.md; source only, rebuild frontend"
+}
