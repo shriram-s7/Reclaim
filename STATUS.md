@@ -3,7 +3,9 @@
 Updated: 13 October 2026, Asia/Kolkata.
 Phase: working local prototype; user-focused workflow refinement.
 
-Latest milestone: C07 evidence reconciliation with adaptive clarification. Read
+In progress: C08 AI reading + journey + Tamil. C08a done: provider adapter built and tested
+with fakes; NOT configured here (no key), so no live extraction exists. See docs/AI_EXTRACTION.md.
+Previous milestone: C07 evidence reconciliation with adaptive clarification. Read
 docs/EVIDENCE_RECONCILIATION.md (implemented vs simulated). 56 backend tests and the build
 pass. Browser-verified all acceptance scenarios on a separate audit DB; existing saved cases
 load (copy of reclaim.db, 4 cases). Evidence checks are rules-based; practice evidence is

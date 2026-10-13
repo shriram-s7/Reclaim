@@ -34,7 +34,7 @@ def test_amount_conflict_shows_sources_and_waits_for_reconfirmation(client):
     question = first(case)
     assert question['kind'] == 'conflict:amount_paise'
     labels = {c['label']: c for c in question['choices']}
-    assert set(labels) == {'INR 18,000.00', 'INR 20,000.00', 'I don’t know'}
+    assert set(labels) == {'INR 18,000.00', 'INR 20,000.00', 'Not sure', 'Answer later'}
     # Every option names its sources, including the exact text that was read.
     assert {s['label'] for s in labels['INR 18,000.00']['sources']} == {'Your saved details', 'Practice payment receipt'}
     assert labels['INR 20,000.00']['sources'][0]['quote'] == 'INR 20,000.00 debited'
@@ -110,7 +110,7 @@ def test_unreadable_reference_allows_unknown_and_reporting_continues(client):
     case = answer(client, case, first(case), 'same:T1')
     question = first(case)
     assert question['kind'] == 'unreadable:reference'
-    assert [c['id'] for c in question['choices']] == ['enter', 'unknown']
+    assert [c['id'] for c in question['choices']] == ['enter', 'unknown', 'later']
     case = answer(client, case, question, 'unknown')
     assert case['reconciliation']['questions'] == [] and case['reference'] == ''
     bank = client.get(f"/api/cases/{case['id']}/docs").json()['bank']
@@ -159,7 +159,7 @@ def test_unrelated_and_unknown_evidence_is_not_counted(client):
     case = client.post(f"/api/cases/{case['id']}/evidence", json={'kind': 'chat', 'typed': {'amount_paise': 99_900}}).json()
     question = first(case)
     assert question['kind'] == 'placement'
-    assert {c['id'] for c in question['choices']} == {'same:T1', 'new', 'unrelated', 'unknown'}
+    assert {c['id'] for c in question['choices']} == {'same:T1', 'new', 'unrelated', 'unknown', 'later'}
     case = answer(client, case, question, 'unrelated')
     assert case['total_paise'] == 1_800_000 and case['reconciliation']['changes'] == []
     assert case['reconciliation']['links']['E1']['status'] == 'unrelated'

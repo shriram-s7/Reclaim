@@ -10,7 +10,7 @@ from pathlib import Path
 from uuid import uuid4
 from urllib.parse import urlparse
 
-from fastapi import FastAPI, HTTPException, Request, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from PIL import Image, UnidentifiedImageError
@@ -18,7 +18,8 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 from .domain import CaseInput, FactsCorrection, ReportInput, CHANNELS, decorate, earliest_transaction, store_transactions, transactions, utcnow
 from . import evidence as ev
 from .documents import documents, pdf_pack
-from .extraction import TextInput, parse_text
+from .extraction import TextInput, parse_quoted, parse_text
+from . import provider
 from .journey import JourneyInput
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -72,11 +73,8 @@ def sample():
 def sample_image():
     return FileResponse(SAMPLE, media_type='image/png', filename='synthetic-payment.png')
 
-@app.post('/api/extract')
-async def extract(image: UploadFile):
-    data = await image.read(10 * 1024 * 1024 + 1)
-    await image.close()
-    if len(data) > 10 * 1024 * 1024:
+def validate_image(data: bytes) -> None:
+    if len(data) > provider.MAX_UPLOAD_BYTES:
         raise HTTPException(413, 'Image must be 10 MB or smaller.')
     try:
         with Image.open(BytesIO(data)) as picture:
@@ -87,18 +85,122 @@ async def extract(image: UploadFile):
             picture.verify()
     except (UnidentifiedImageError, OSError, ValueError, Image.DecompressionBombError):
         raise HTTPException(422, 'Use a static PNG, JPEG or WebP image under 20 megapixels.')
-    if SAMPLE.exists() and hashlib.sha256(data).digest() == hashlib.sha256(SAMPLE.read_bytes()).digest():
+
+def is_fixture(data: bytes) -> bool:
+    return SAMPLE.exists() and hashlib.sha256(data).digest() == hashlib.sha256(SAMPLE.read_bytes()).digest()
+
+@app.post('/api/extract')
+async def extract(image: UploadFile):
+    data = await image.read(provider.MAX_UPLOAD_BYTES + 1)
+    await image.close()
+    validate_image(data)
+    if is_fixture(data):
         return {'source': 'fixture', 'fields': {**sample(), 'source': 'fixture'},
                 'message': 'Known synthetic sample loaded. This is a fixture, not live AI extraction.'}
     return {'source': 'manual', 'fields': None,
             'message': 'Live screenshot reading is not connected yet. Enter the details below; your image was not saved.'}
 
+@app.get('/api/extraction/status')
+def extraction_status():
+    return provider.status()
+
+# Readings wait here, in memory only, until the person confirms a case. Nothing is persisted.
+READINGS: dict[str, dict] = {}
+READING_TTL = timedelta(hours=2)
+
+def remember(reading: dict) -> str:
+    now = utcnow()
+    for key in [k for k, v in READINGS.items() if now - v['created'] > READING_TTL]:
+        READINGS.pop(key, None)
+    while len(READINGS) >= 50:
+        READINGS.pop(next(iter(READINGS)))
+    key = uuid4().hex
+    READINGS[key] = {**reading, 'created': now}
+    return key
+
+def read_evidence(image: bytes | None, text: str, consent: bool, kind: str) -> dict:
+    """Read one piece of evidence. Always returns a usable result; failure means manual entry."""
+    if kind not in ev.KINDS:
+        raise HTTPException(422, 'Choose what kind of evidence this is.')
+    text = text.strip()
+    if image is None and not text:
+        raise HTTPException(422, 'Add a screenshot or paste the message text.')
+    if len(text) > provider.MAX_TEXT:
+        raise HTTPException(422, 'Message text must be 4,000 characters or fewer.')
+    if any(ord(c) < 32 and c not in '\n\t\r' for c in text):
+        raise HTTPException(422, 'Remove hidden control characters and check this field.')
+    result = {'status': 'manual', 'source': None, 'facts': {}, 'notes': [], 'kind': kind,
+              'text': text if image is None else '', 'provider': None}
+    if image is not None:
+        validate_image(image)
+        if is_fixture(image):
+            fields = sample()
+            result.update(status='read', source='synthetic_fixture', notes=['Known synthetic sample: a fixture, not AI reading.'],
+                          facts={f: {'value': fields[f], 'status': 'read', 'quote': '', 'quote_verified': None}
+                                 for f in ev.FIELDS})
+            return result
+        if not consent:
+            result.update(status='needs_consent', notes=['Nothing was sent. Agree to send it for reading, or type the details yourself.'])
+            return result
+    elif not (consent and provider.status()['enabled']):
+        # Pasted text can always be read by local rules, without sending it anywhere.
+        quoted = parse_quoted(text)
+        facts = {f: {'value': v, 'status': 'read', 'quote': q, 'quote_verified': True}
+                 for f, (v, q) in quoted.items() if f in ev.FIELDS}
+        result.update(status='read' if facts else 'manual', source='pasted_text', facts=facts,
+                      notes=['Read on this computer by simple text rules, not AI.'])
+        return result
+    try:
+        reading = provider.read(image=image, text=None if image is not None else text)
+    except provider.ExtractionFailed as failure:
+        result.update(status=failure.status, notes=[failure.reason, 'Nothing was saved. You can type the details yourself.'])
+        return result
+    result.update(status='read' if reading['facts'] else 'manual', source='ai_provider',
+                  facts=reading['facts'], notes=reading['notes'], provider={'name': provider.PROVIDER, 'model': provider.MODEL})
+    return result
+
+def fields_from(facts: dict) -> dict:
+    """Prefill values for the intake form: only values actually read."""
+    return {f: fact['value'] for f, fact in facts.items() if fact['status'] == 'read'}
+
+def upload_bytes(image: UploadFile | None) -> bytes | None:
+    if image is None:
+        return None
+    try:
+        return image.file.read(provider.MAX_UPLOAD_BYTES + 1)
+    finally:
+        image.file.close()
+
+@app.post('/api/evidence/read')
+def read_for_intake(image: UploadFile | None = File(None), text: str = Form(''), consent: bool = Form(False),
+                    kind: str = Form('screenshot')):
+    result = read_evidence(upload_bytes(image), text, consent, kind)
+    if result['facts']:
+        result['reading_id'] = remember({k: result[k] for k in ('kind', 'source', 'facts', 'text', 'provider')})
+    return {**result, 'fields': fields_from(result['facts'])}
+
+@app.post('/api/cases/{case_id}/evidence/read', status_code=201)
+def read_into_case(case_id: str, image: UploadFile | None = File(None), text: str = Form(''),
+                   consent: bool = Form(False), kind: str = Form('screenshot')):
+    get_case(case_id)
+    result = read_evidence(upload_bytes(image), text, consent, kind)
+    with editing(case_id) as case:
+        if result['source'] and (result['facts'] or result['text']):
+            if len(case['evidence']['items']) >= 20:
+                raise ValueError('This prototype keeps up to 20 evidence items per case.')
+            ev.new_item(case, kind, result['source'], result['facts'], result['text'], provider=result['provider'])
+    return {'reading': result, 'case': decorate(case)}
+
 @app.post('/api/cases', status_code=201)
 def create_case(payload: CaseInput):
-    case = payload.model_dump(mode='json')
+    case = payload.model_dump(mode='json', exclude={'reading_id'})
     case.update(id='RC-' + uuid4().hex[:12].upper(), created_at=utcnow().isoformat(), reports={},
                 facts_version=1, corrections=[], evidence={'items': [], 'answers': {}, 'next': 1})
     store_transactions(case, transactions(case))
+    reading = READINGS.pop(payload.reading_id, None) if payload.reading_id else None
+    if reading:
+        item = ev.new_item(case, reading['kind'], reading['source'], reading['facts'], reading['text'], provider=reading['provider'])
+        ev.settle_with_intake(case, item['id'])
     with db() as connection:
         connection.execute('INSERT INTO cases VALUES (?,?)', (case['id'], json.dumps(case)))
     return decorate(case)
