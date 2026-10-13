@@ -3,11 +3,13 @@
 Updated: 13 October 2026, Asia/Kolkata.
 Phase: working local prototype; user-focused workflow refinement.
 
-Latest milestone: C06 implementation audit and journey fixes (see docs/GUIDED_WORKFLOW.md,
-"C06 audit"). 39 backend tests and the production build pass (scripts/verify.ps1).
-Browser-verified on a separate audit DB: wrong input, Back/reload without losing answers,
-no-answer vs reported labels, waiting + reference correction, reminder cancel, due reminder
-after reopening, deleted-case resume link, and 360px layout with no horizontal overflow.
+Latest milestone: C07 evidence reconciliation with adaptive clarification. Read
+docs/EVIDENCE_RECONCILIATION.md (implemented vs simulated). 56 backend tests and the build
+pass. Browser-verified all acceptance scenarios on a separate audit DB; existing saved cases
+load (copy of reclaim.db, 4 cases). Evidence checks are rules-based; practice evidence is
+labelled synthetic fixtures; images are not read; no AI provider is connected.
+Earlier: C06 journey audit fixes (Back/reload keeps answers, reference correction keeps
+reminders, clear reported/unreported labels).
 Previous: C05 guided delays and reminders. Intake has five short steps, at most two
 ordinary inputs per screen. Tamil assistance is a limited preview, not a translation.
 In-app reminders/calendar export are implemented; SMS/push/background delivery is not.
@@ -42,14 +44,16 @@ Server started in this chat; if unavailable rerun the script. It is loopback onl
 Run scripts/verify.ps1. Restricted execution may need permission for test-loop sockets.
 
 ## Next work
-Priority: `docs/INTELLIGENCE_ROADMAP.md` I1-I5. The evidence-to-action engine is not built.
-1. I1: safe editing of confirmed case facts with explicit re-confirmation.
-2. Independent (non-developer) phone walkthrough of the C06 journey; record confusion points.
-3. Custom reminder date/time; "later" currently offers only 15/30/60 minutes.
-4. Improve live extraction behind a configured provider; keep honest manual fallback.
-5. Review Tamil translations and multilingual PDF font/shaping before enabling them.
+Priority: `docs/INTELLIGENCE_ROADMAP.md`. I1 and deterministic I3 are done (C07).
+1. I2: provider adapter for image/text reading behind explicit consent, timeout and schema
+   validation, producing the same candidate facts; mocked failure/no-key tests first.
+2. Held-out synthetic evidence set and results table; independent user test of questions.
+3. Removing a confirmed payment with re-confirmation (currently not possible).
+4. Custom reminder date/time; review Tamil strings incl. the evidence panel.
 
 ## Known limits
+- Evidence: duplicate/conflict thresholds are unvalidated product judgments; images are
+  never read; practice scenarios are fixtures. See docs/EVIDENCE_RECONCILIATION.md.
 - Phone checks used a 360px same-origin frame inside desktop Chrome, not a real device.
 - On a phone, "How did this step go?" sits below the draft text; users must scroll to it.
 - A server started by an earlier session may still be listening on port 8000 with old

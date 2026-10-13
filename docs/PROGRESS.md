@@ -1,5 +1,22 @@
 # Progress log
 
+## 2026-10-13 - C07: evidence reconciliation with adaptive clarification
+- New evidence model (candidate facts + source quote + read/unreadable) kept apart from
+  confirmed payments; multiple payments with total; legacy cases normalised on read.
+- Deterministic placement (same/separate/unrelated/unknown), possible-duplicate and
+  conflict detection, one-question queue with "I don't know", answer changes.
+- Proposed changes apply only after re-confirmation (version-checked, logged); manual
+  correction form; all drafts and PDF regenerate from confirmed facts.
+- Text quotes come from the existing local parser (refactored to return exact quotes;
+  behaviour and its tests unchanged).
+- Checks: 56 backend tests passed (17 new); build passed; real reclaim.db copy (4 cases)
+  loads with docs/PDF/export; browser walkthrough of all five acceptance scenarios plus
+  typed evidence and manual correction; 360px without overflow.
+- Found and fixed during browser check: "1 minutes" wording; unknown references were
+  duplicated into drafts' "still checking" list; case view briefly kept the previous
+  case's data when switching cases.
+- Simulated: practice evidence is synthetic fixtures. Not built: image reading, AI provider.
+
 ## 2026-10-13 - C06: implementation audit against documentation
 - Baseline re-run before edits: 35 tests passed, build passed. Then walked the journey in
   Chrome on a separate audit server (127.0.0.1:5173, tmp/audit.db) and API probes.

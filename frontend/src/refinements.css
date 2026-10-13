@@ -92,3 +92,46 @@ input::placeholder,textarea::placeholder{color:#718066;font-size:12px}
 .guided-step .reference-line strong{overflow-wrap:anywhere}
 .suggested-next{white-space:normal;max-width:100%;text-align:left;margin-bottom:12px}
 .guided-step .button.wide{white-space:normal;max-width:100%}
+/* C07 evidence reconciliation: calm, one question at a time. */
+.evidence-banner{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#eef4fb;border:1px solid #cbdcee;color:#24466b;border-radius:8px;padding:12px 16px;margin:12px 0;font-size:14px;text-decoration:none}
+.evidence-banner span{margin-left:auto;font-weight:650;text-decoration:underline}
+.evidence-card{background:#fff;border:1px solid #dce5d5;border-radius:12px;padding:24px;margin-top:24px}
+.evidence-card h3{font-size:17px;margin:22px 0 10px}
+.evidence-card .small,.add-evidence .small{font-size:12px;color:#5e6f59}
+.question-card{border:2px solid #cfe0c8;background:#f8fbf5;border-radius:10px;padding:18px;margin:18px 0}
+.question-card h3{font-size:19px;margin:6px 0 8px;line-height:1.35}
+.question-card p{font-size:14px;color:#52634b;margin:6px 0}
+.question-card .reasons{margin:8px 0;padding-left:20px;font-size:14px;color:#35502f}
+.sources{background:#fff;border:1px solid #e1e8da;border-radius:8px;padding:12px;margin:12px 0}
+.sources ul{list-style:none;margin:6px 0 0;padding:0}
+.sources li{display:flex;flex-direction:column;gap:2px;padding:6px 0;border-top:1px solid #eef2ea;font-size:13px}
+.sources li:first-child{border-top:0}
+.sources small,.choice-list small{color:#617158;font-size:11.5px}
+q{display:block;font-style:italic;color:#3d5236;overflow-wrap:anywhere}
+q::before{content:'“'}q::after{content:'”'}
+.choice-list{display:flex;flex-direction:column;gap:10px;margin-top:14px}
+.choice-list .button{display:flex;flex-direction:column;align-items:flex-start;gap:4px;white-space:normal;text-align:left;min-height:48px;width:100%}
+.choice-list .button.quiet{background:transparent}
+.enter-form label{display:flex;flex-direction:column;gap:6px;margin-top:12px}
+.changes ul{padding-left:20px;font-size:14px;line-height:1.7}.changes em{display:block;color:#8a5a1c;font-size:13px}
+.calm-note{display:flex;align-items:center;gap:8px;color:#2f5a2a;font-size:14px}
+.unsure{background:#fff6df;border:1px solid #e6d5b3;border-radius:8px;padding:12px 16px;margin:14px 0;font-size:13px}
+.unsure ul{margin:6px 0;padding-left:18px}
+.payments ul,.evidence-list,.history ul{list-style:none;padding:0;margin:0}
+.payments li{display:grid;grid-template-columns:auto 1fr;gap:2px 12px;padding:10px 0;border-top:1px solid #eef2ea;font-size:14px}
+.payments li small{grid-column:1/-1;color:#617158;overflow-wrap:anywhere}
+.payments .total{font-size:14px}
+.evidence-item{display:flex;justify-content:space-between;gap:12px;border-top:1px solid #eef2ea;padding:12px 0;font-size:13px}
+.evidence-item>div{min-width:0}
+.evidence-item small,.evidence-item .link-status{display:block;color:#617158}
+.evidence-item .link-status{color:#24466b;margin-top:2px}
+.evidence-item ul{margin:6px 0 0;padding-left:16px}
+.add-evidence{border-top:1px solid #eef2ea;margin-top:18px;padding-top:6px}
+.add-evidence label{display:flex;flex-direction:column;gap:6px}
+.add-evidence .confirm-box{flex-direction:row}
+.answer-list{list-style:none;padding:0;font-size:13px}
+.answer-list li{display:flex;flex-wrap:wrap;gap:4px 10px;padding:8px 0;border-top:1px solid #eef2ea}
+.answer-list li span{flex-basis:100%}
+.correct-link{margin-top:18px}
+.history li{display:flex;flex-direction:column;gap:2px;padding:8px 0;border-top:1px solid #eef2ea;font-size:13px}
+@media(max-width:760px){.evidence-card{padding:16px}.question-card{padding:14px}}
