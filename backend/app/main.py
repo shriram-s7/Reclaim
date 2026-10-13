@@ -15,7 +15,8 @@ from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from PIL import Image, UnidentifiedImageError
 from starlette.middleware.trustedhost import TrustedHostMiddleware
-from .domain import CaseInput, ReportInput, CHANNELS, decorate, utcnow
+from .domain import CaseInput, FactsCorrection, ReportInput, CHANNELS, decorate, earliest_transaction, store_transactions, transactions, utcnow
+from . import evidence as ev
 from .documents import documents, pdf_pack
 from .extraction import TextInput, parse_text
 from .journey import JourneyInput
@@ -95,7 +96,9 @@ async def extract(image: UploadFile):
 @app.post('/api/cases', status_code=201)
 def create_case(payload: CaseInput):
     case = payload.model_dump(mode='json')
-    case.update(id='RC-' + uuid4().hex[:12].upper(), created_at=utcnow().isoformat(), reports={})
+    case.update(id='RC-' + uuid4().hex[:12].upper(), created_at=utcnow().isoformat(), reports={},
+                facts_version=1, corrections=[], evidence={'items': [], 'answers': {}, 'next': 1})
+    store_transactions(case, transactions(case))
     with db() as connection:
         connection.execute('INSERT INTO cases VALUES (?,?)', (case['id'], json.dumps(case)))
     return decorate(case)
@@ -125,8 +128,7 @@ def save_report(case_id: str, channel: str, payload: ReportInput):
         if not row:
             raise HTTPException(404, 'Case not found.')
         case = json.loads(row[0])
-        from datetime import datetime
-        if payload.reported_at < datetime.fromisoformat(case['occurred_at']):
+        if payload.reported_at < earliest_transaction(case):
             raise HTTPException(422, 'Report time cannot be before the transaction.')
         previous = case['reports'].get(channel)
         case['reports'][channel] = {**payload.model_dump(mode='json'),
@@ -161,6 +163,78 @@ def update_journey(case_id: str, channel: str, payload: JourneyInput):
         case.setdefault('journey', {})[channel] = event
         case.setdefault('journey_history', []).append({'channel': channel, **event})
         connection.execute('UPDATE cases SET data=? WHERE id=?', (json.dumps(case), case_id))
+    return decorate(case)
+
+@contextmanager
+def editing(case_id: str):
+    """Read-modify-write one case under a write lock; domain errors become clear HTTP errors."""
+    with db() as connection:
+        connection.execute('BEGIN IMMEDIATE')
+        row = connection.execute('SELECT data FROM cases WHERE id=?', (case_id,)).fetchone()
+        if not row:
+            raise HTTPException(404, 'Case not found.')
+        case = json.loads(row[0])
+        case.setdefault('evidence', {'items': [], 'answers': {}})
+        try:
+            yield case
+        except PermissionError as error:
+            raise HTTPException(409, str(error))
+        except LookupError as error:
+            raise HTTPException(404, str(error).strip("'"))
+        except ValueError as error:
+            raise HTTPException(422, str(error))
+        connection.execute('UPDATE cases SET data=? WHERE id=?', (json.dumps(case), case_id))
+
+@app.post('/api/cases/{case_id}/evidence', status_code=201)
+def add_evidence(case_id: str, payload: ev.EvidenceInput):
+    with editing(case_id) as case:
+        if len(case['evidence']['items']) >= 20:
+            raise ValueError('This prototype keeps up to 20 evidence items per case.')
+        ev.add_evidence(case, payload)
+    return decorate(case)
+
+@app.post('/api/cases/{case_id}/evidence/practice/{scenario}', status_code=201)
+def add_practice_evidence(case_id: str, scenario: str):
+    with editing(case_id) as case:
+        try:
+            ev.add_practice(case, scenario)
+        except KeyError:
+            raise HTTPException(404, 'Unknown practice scenario.')
+    return decorate(case)
+
+@app.delete('/api/cases/{case_id}/evidence/{evidence_id}')
+def remove_evidence(case_id: str, evidence_id: str):
+    # Removing evidence never removes a confirmed payment; it only drops its candidate facts.
+    with editing(case_id) as case:
+        items = case['evidence']['items']
+        if not any(item['id'] == evidence_id for item in items):
+            raise LookupError('Evidence not found.')
+        case['evidence']['items'] = [item for item in items if item['id'] != evidence_id]
+        case['evidence']['answers'].pop(f'place:{evidence_id}', None)
+    return decorate(case)
+
+@app.put('/api/cases/{case_id}/clarifications/{question_id}')
+def answer_question(case_id: str, question_id: str, payload: ev.AnswerInput):
+    with editing(case_id) as case:
+        ev.record_answer(case, question_id, payload)
+    return decorate(case)
+
+@app.delete('/api/cases/{case_id}/clarifications/{question_id}')
+def change_answer(case_id: str, question_id: str):
+    with editing(case_id) as case:
+        ev.forget_answer(case, question_id)
+    return decorate(case)
+
+@app.post('/api/cases/{case_id}/corrections')
+def apply_corrections(case_id: str, payload: ev.ApplyInput):
+    with editing(case_id) as case:
+        ev.apply_changes(case, payload)
+    return decorate(case)
+
+@app.put('/api/cases/{case_id}/facts')
+def correct_facts(case_id: str, payload: FactsCorrection):
+    with editing(case_id) as case:
+        ev.correct_facts(case, payload)
     return decorate(case)
 
 @app.delete('/api/cases/{case_id}', status_code=204)

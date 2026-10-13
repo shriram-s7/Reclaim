@@ -81,7 +81,14 @@ is still ahead. The basic reporting prototype is much further along than the int
 MVP. A production readiness percentage would be misleading at this stage.
 
 ## Revised build order and gates
-### I1 - Evidence model and safe corrections (next)
+### Status update (C07, 13 October 2026)
+I1 is implemented and the deterministic part of I3 (conflicts, duplicates, one-question
+clarification, "I don't know", corrections) is implemented and tested with synthetic
+fixtures. I2 (live reading) is not started. See docs/EVIDENCE_RECONCILIATION.md.
+The completion table above predates C07; the rows for multi-evidence construction and
+adaptive clarification are now "rules-based first version", not "not built".
+
+### I1 - Evidence model and safe corrections (done in C07)
 Introduce EvidenceItem, CandidateFact, ConfirmedFact, Transaction, Conflict and
 Clarification. Store source provenance separately from confirmed user input. Add case
 editing that explicitly requires confirmation and regenerates all drafts. Preserve the

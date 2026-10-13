@@ -19,6 +19,9 @@ POST /api/cases; GET /api/cases; GET /api/cases/{id};
 PUT /api/cases/{id}/reports/{channel}; DELETE /api/cases/{id};
 GET /api/cases/{id}/docs; GET /api/cases/{id}/pack.pdf;
 GET /api/cases/{id}/export.json.
+Evidence and corrections (C07): see docs/EVIDENCE_RECONCILIATION.md. Confirmed payments
+live in `transactions` (first mirrored in top-level fields); evidence candidates never
+change them without an answered question and a re-confirmed, version-checked apply.
 
 Image extraction initially supports the bundled synthetic image by SHA-256; unknown
 images return manual mode. Enforce decoded image type and size, reject animation and
