@@ -70,7 +70,12 @@ def test_status_names_missing_configuration_without_revealing_secrets(client, un
 def test_unconfigured_provider_falls_back_to_manual_without_sending(client, unconfigured):
     result = read(client, png())
     assert result['status'] == 'unavailable' and result['facts'] == {} and result['fields'] == {}
-    assert 'type the details yourself' in result['notes'][-1]
+    assert result['notes'][-1]['key'] == 'read.nothing_saved'
+    assert unconfigured == []
+
+def test_unconfigured_screenshot_says_not_set_up_even_without_consent(client, unconfigured):
+    result = read(client, png(), consent=False)
+    assert result['status'] == 'unavailable' and result['notes'][0]['key'] == 'read.unavailable_setup'
     assert unconfigured == []
 
 def test_no_consent_means_nothing_is_sent(client, configured):
@@ -83,7 +88,7 @@ def test_no_consent_means_nothing_is_sent(client, configured):
 def test_known_fixture_is_never_sent_and_is_labelled(client, configured):
     _, calls = configured
     result = read(client, main.SAMPLE.read_bytes())
-    assert result['source'] == 'synthetic_fixture' and 'not AI' in result['notes'][0]
+    assert result['source'] == 'synthetic_fixture' and result['notes'][0]['key'] == 'read.fixture'
     assert calls == []
 
 def test_clear_reading_is_validated_into_candidate_facts(client, configured):

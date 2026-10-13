@@ -77,3 +77,16 @@ The topic PDF lists four domains but says five; cybersecurity is explicitly list
 The main experience is a calm guided reporting flow, not a dashboard. Remove review
 and presentation navigation from the public journey. Use small forms, plain wording,
 visible progress and a clear next action. Reviewer tools remain separate demo routes.
+
+## D11 - AI evidence reading (C08, 14 October 2026)
+Provider: Anthropic via the official SDK, behind RECLAIM_EXTRACTION_PROVIDER and credentials;
+off by default and not configured on this computer. Per-request consent; fixtures never sent;
+strict schema plus server re-validation; unclear values stay null; values must appear in their
+own quote; pasted-text quotes must be literal substrings. No confidence scores. Readings are
+candidates: nothing is saved until the person confirms. Live accuracy is unknown until the
+held-out set is run with a configured key.
+
+## D12 - Languages (C08)
+English and Tamil share one catalogue structure; English is the single source for backend and
+interface. Tamil is labelled as awaiting native-speaker review. Official drafts and the PDF
+remain English; multilingual PDF is not claimed until rendering is tested.

@@ -19,6 +19,9 @@ POST /api/cases; GET /api/cases; GET /api/cases/{id};
 PUT /api/cases/{id}/reports/{channel}; DELETE /api/cases/{id};
 GET /api/cases/{id}/docs; GET /api/cases/{id}/pack.pdf;
 GET /api/cases/{id}/export.json.
+AI reading (C08): GET /api/extraction/status; POST /api/evidence/read (multipart: image or text,
+consent, kind); POST /api/cases/{id}/evidence/read. See docs/AI_EXTRACTION.md. Errors are
+{message, code, params, field}; translations in frontend/src/i18n (docs/I18N.md).
 Evidence and corrections (C07): see docs/EVIDENCE_RECONCILIATION.md. Confirmed payments
 live in `transactions` (first mirrored in top-level fields); evidence candidates never
 change them without an answered question and a re-confirmed, version-checked apply.
