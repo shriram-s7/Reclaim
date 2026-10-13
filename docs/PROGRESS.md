@@ -17,3 +17,14 @@
   references; progress reached 3/3 and drafts contained earlier references.
 - Local server started at http://127.0.0.1:8000. No external deployment.
 - Next: PDF visual QA, mobile layout, final handoff documentation and Git checkpoint.
+
+## 2026-10-13 - C03: ordinary-user workflow
+- User explicitly prioritized ordinary people and a clear working journey.
+- Removed dashboard controls/sidebar from citizen screens; split entry into three steps.
+- Simplified labels and added a next-action button after saving a report.
+- Added conservative text extraction, PDF unsupported-glyph error, database cleanup.
+- 26 backend tests passed; latest frontend build passed. Revised three-step form
+  browser-tested to confirmation. Full updated mobile save/next-step QA remains next.
+- Sample PDF rendered and visually reviewed on both pages.
+- Final browser check: revised flow saved a case, saved one reporting reference, and
+  Next opened the bank draft. No horizontal overflow at 360px. Screenshot saved.

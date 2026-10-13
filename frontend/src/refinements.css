@@ -1,0 +1,81 @@
+/* Readability and responsive corrections from the first browser review. */
+.citizen-shell .sidebar{display:none}
+.citizen-shell .main-shell{margin-left:0}
+.citizen-shell .topbar{max-width:100%;padding-left:max(24px,calc((100vw - 960px)/2));padding-right:max(24px,calc((100vw - 960px)/2))}
+.citizen-shell .topbar>span,.citizen-shell .avatar{display:none}
+.citizen-shell .mobile-brand{display:block;font-size:29px;font-weight:750;letter-spacing:-1px;min-height:44px}
+.citizen-shell .home,.citizen-shell .inner-page{max-width:960px}
+.citizen-shell .case-preview,.citizen-shell .help-card{display:none}
+.citizen-shell .hero-grid,.citizen-shell .prepare-grid{grid-template-columns:1fr}
+.citizen-shell .hero-copy{max-width:720px}
+.citizen-shell .hero-grid{margin-bottom:28px}
+.citizen-shell h1{font-size:42px}
+.citizen-shell .page-title{font-size:32px}
+.citizen-shell .prepare-grid{max-width:700px;margin:auto}
+.citizen-shell .case-grid{grid-template-columns:1fr}
+.citizen-shell .step-menu{display:flex;flex-wrap:wrap;gap:8px}
+.citizen-shell .step-menu>.eyebrow,.citizen-shell .case-side-note{display:none}
+.citizen-shell .step-tab{flex:1;min-width:160px;background:#fff;border:1px solid #dce5d5}
+.citizen-shell .step-menu>.text-button{font-size:12px}
+.citizen-shell .page-footer{max-width:960px}
+.citizen-shell .draft-text{min-height:220px}
+.demo-tools{background:#f7f9f3;border:1px solid #e1e8da;border-radius:8px;padding:15px;margin-bottom:22px}
+.demo-tools>summary{cursor:pointer;font-size:13px;color:#53694b;min-height:26px}
+.demo-tools .sample-row{margin-top:15px}
+.next-action{margin-top:22px}
+@media(max-width:760px){.citizen-shell h1{font-size:32px}.citizen-shell .page-title{font-size:27px}.citizen-shell .topbar{padding:0 16px}.citizen-shell .step-tab{min-width:0;flex-basis:28%;padding:12px 8px}.citizen-shell .step-tab strong{font-size:11px}.citizen-shell .topbar .demo-label{max-width:145px;font-size:10px;text-align:right}}
+.mobile-brand,.mobile-review{display:none}
+.embedded .sidebar,.embedded .topbar{display:none}
+.embedded .main-shell{margin-left:0}
+.embedded .home,.embedded .inner-page{padding:25px 20px 15px}
+.table-wrap{position:relative;max-width:100%}
+.queue{min-width:0}
+.muted,.hero-description,.action-card p,.sidebar-note p,.preview-step small,
+.gentle-note,.source-note,.help-card p,.form-card-heading p,.draft-header p,
+.report-form>p,.queue-footer,.description-review,.preview-bottom{color:#5e6f59}
+.eyebrow,.workspace-label,.step-tab small,.optional,.fact-list dt,.metric>span,
+.metric>small,.queue th,.queue td small,.step-tab>div>span,.demo-label,
+.page-footer,.sidebar-footer,.trust-line,.help-foot,.review-amount>span:first-child,
+.draft-label>span,.form-bottom>span,.step-menu>.text-button{color:#617158}
+.urgent-strip strong,.urgent-strip p,.compact-urgent{color:#775c2c}
+.hero-description,.action-card p,.help-card p,.description-review{font-size:13px}
+.gentle-note p,.preview-step small,.source-note,.draft-header p,.form-card-heading p,
+.report-form>p,.metric>small,.queue-footer,.step-tab>div>span{font-size:11px}
+.action-card h3{font-size:15px}
+.action-card .text-button,.help-card .text-button{font-size:12px}
+.draft-text{font-size:13px;color:#43573c}
+label{font-size:12px}
+input:not([type=checkbox]):not([type=file]),textarea,select{font-size:14px}
+input::placeholder,textarea::placeholder{color:#718066;font-size:12px}
+.text-button,.back-link,.upload-button{min-height:44px}
+.preview-top .tiny-pill{color:#566b4d}
+.sms-import{margin-top:14px;border:1px solid #e0e8d9;border-radius:6px;padding:12px;font-size:12px}
+.sms-import summary{cursor:pointer;color:#4d6845;min-height:24px}
+.sms-import label{margin:14px 0}
+.sms-import p{font-size:10px;color:#617158;margin-top:9px}
+.step-tab.selected{box-shadow:inset 3px 0 #55774d}
+.nav-item.active{box-shadow:inset 3px 0 #55774d}
+.green{color:#416936}
+.amber{color:#876819}
+.soft-badge,.status-pill.done{color:#4a693c}
+.status-pill{color:#806126}
+.report-dots span{color:#657458}
+.report-dots .done{color:#456a36}
+@media(max-width:760px){
+  .mobile-brand{display:block;font-size:24px;letter-spacing:-1px;font-weight:750;padding:0;min-height:44px}
+  .mobile-review{display:grid;place-items:center;width:44px;height:44px;color:#45633d}
+  .topbar:before{content:none}
+  .topbar .avatar{display:none}
+  .topbar>div{gap:5px}
+  .page-title{font-size:28px}
+  .step-tab strong{font-size:11px}
+  .step-tab>div>span{font-size:9px}
+  .step-tab{min-height:100px}
+  .fact-list>div{font-size:12px}
+  .confirm-box,.report-form .confirm-box{font-size:12px}
+  .metric>span{font-size:11px}
+  .metric>small{font-size:10px}
+  .progress-banner p{font-size:12px}
+  .draft-header p{font-size:11px}
+  .external-action>.small{font-size:11px}
+}

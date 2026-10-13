@@ -109,3 +109,9 @@ def test_cases_survive_new_client(client):
     case=create(client)
     with TestClient(main.app) as second:
         assert second.get('/api/cases/'+case['id']).json()['amount_paise'] == 1800000
+
+def test_pdf_unsupported_glyph_does_not_silently_corrupt_text(client):
+    data=case_data(client);data['description']='Fictional incident: தமிழ்'
+    case=client.post('/api/cases',json=data).json()
+    assert client.get(f"/api/cases/{case['id']}/pack.pdf").status_code == 422
+    assert 'தமிழ்' in client.get(f"/api/cases/{case['id']}/export.json").json()['description']

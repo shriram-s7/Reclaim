@@ -3,6 +3,7 @@ import hashlib
 import json
 import os
 import sqlite3
+from contextlib import contextmanager
 from datetime import timedelta
 from io import BytesIO
 from pathlib import Path
@@ -16,6 +17,7 @@ from PIL import Image, UnidentifiedImageError
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 from .domain import CaseInput, ReportInput, CHANNELS, decorate, utcnow
 from .documents import documents, pdf_pack
+from .extraction import TextInput, parse_text
 
 ROOT = Path(__file__).resolve().parents[2]
 DB_PATH = Path(os.environ.get('RECLAIM_DB', str(ROOT / 'reclaim.db')))
@@ -36,10 +38,15 @@ async def local_boundary(request: Request, call_next):
     response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; connect-src 'self'; frame-src 'self'; frame-ancestors 'self'; object-src 'none'; base-uri 'self'"
     return response
 
+@contextmanager
 def db():
     connection = sqlite3.connect(DB_PATH)
-    connection.execute('CREATE TABLE IF NOT EXISTS cases (id TEXT PRIMARY KEY, data TEXT NOT NULL)')
-    return connection
+    try:
+        connection.execute('CREATE TABLE IF NOT EXISTS cases (id TEXT PRIMARY KEY, data TEXT NOT NULL)')
+        with connection:
+            yield connection
+    finally:
+        connection.close()
 
 def get_case(case_id: str):
     with db() as connection:
@@ -92,6 +99,10 @@ def create_case(payload: CaseInput):
         connection.execute('INSERT INTO cases VALUES (?,?)', (case['id'], json.dumps(case)))
     return decorate(case)
 
+@app.post('/api/extract-text')
+def extract_text(payload: TextInput):
+    return parse_text(payload.text)
+
 @app.get('/api/cases')
 def list_cases():
     with db() as connection:
@@ -139,7 +150,11 @@ def case_documents(case_id: str):
 @app.get('/api/cases/{case_id}/pack.pdf')
 def case_pdf(case_id: str):
     case = get_case(case_id)
-    return Response(pdf_pack(case), media_type='application/pdf', headers={
+    try:
+        data = pdf_pack(case)
+    except ValueError as error:
+        raise HTTPException(422, str(error))
+    return Response(data, media_type='application/pdf', headers={
         'Content-Disposition': f'attachment; filename="{case["id"]}-case-pack.pdf"'})
 
 @app.get('/api/cases/{case_id}/export.json')

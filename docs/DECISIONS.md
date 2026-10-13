@@ -72,3 +72,8 @@ Read complete extracted text: participant instructions/topics (4 pages), FAQs (2
 event flow (1), proposal (1), implementation (15), technical design (8). Total 31.
 Text copies in source-text retain page delimiters; originals remain the visual source.
 The topic PDF lists four domains but says five; cybersecurity is explicitly listed.
+
+## D10 - Everyday users first (explicit user direction)
+The main experience is a calm guided reporting flow, not a dashboard. Remove review
+and presentation navigation from the public journey. Use small forms, plain wording,
+visible progress and a clear next action. Reviewer tools remain separate demo routes.

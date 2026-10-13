@@ -1,13 +1,20 @@
 from datetime import datetime, timedelta, timezone
 from io import BytesIO
+from pathlib import Path
+import os
+import reportlab
 from xml.sax.saxutils import escape
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_LEFT
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 from .domain import money
 
 IST = timezone(timedelta(hours=5, minutes=30))
+FONT_PATH = Path(os.environ.get('RECLAIM_PDF_FONT', str(Path(reportlab.__file__).parent / 'fonts' / 'Vera.ttf')))
+pdfmetrics.registerFont(TTFont('ReclaimBodyFont', str(FONT_PATH)))
 
 def shown_time(value: str) -> str:
     return datetime.fromisoformat(value).astimezone(IST).strftime('%d %b %Y, %I:%M %p IST')
@@ -35,12 +42,15 @@ def pdf_pack(case: dict) -> bytes:
     """Plain confirmed facts; escaped content, flowing layout, no fabricated attachments."""
     output = BytesIO()
     styles = getSampleStyleSheet()
-    styles.add(ParagraphStyle(name='ReclaimBody', fontName='Helvetica', fontSize=10,
+    styles.add(ParagraphStyle(name='ReclaimBody', fontName='ReclaimBodyFont', fontSize=10,
                              leading=15, spaceAfter=10, alignment=TA_LEFT, wordWrap='CJK'))
     styles['Title'].textColor = colors.HexColor('#123E37')
     def para(text, style='ReclaimBody'):
         # Base PDF font: use INR and transliterate unsupported punctuation explicitly.
         clean = text.replace('₹', 'INR ').replace('—', '-').replace('’', "'")
+        supported = pdfmetrics.getFont('ReclaimBodyFont').face.charToGlyph
+        if any(ord(char) not in supported for char in clean if not char.isspace()):
+            raise ValueError('The demo PDF font cannot render some characters in this case. Use the JSON export to preserve all text. Multilingual PDF support is pending.')
         return Paragraph(escape(clean).replace('\n', '<br/>'), styles[style])
     story = [para('RECLAIM', 'Title'), para('Case preparation record', 'Heading2'),
              para(f"Case {case['id']} | Created {shown_time(case['created_at'])}"),
