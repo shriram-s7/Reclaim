@@ -1,5 +1,16 @@
 # Progress log
 
+## 2026-10-13 - C05: guided delay-aware workflow
+- Added persisted journey states, explanation-based next action and reminder times.
+- No-answer/later does not mark reported. Waiting/resolved needs an actual saved report.
+- Reduced intake to at most two inputs per step; added quick incident choices and an
+  optional safety question. Tamil choice assistance is explicitly a review-needed preview.
+- Improved bank/time/control-character validation and review warnings.
+- 35 tests pass; production build passes. Browser verified no-answer/reminder/persistence.
+- Calendar export downloaded and its time/alarm fields inspected; calendar notification
+  delivery was not tested and requires user import/settings.
+- See GUIDED_WORKFLOW.md for exact limits and next work. C03 ZIPs remain unchanged.
+
 ## 2026-10-13 - C04: immutable baseline backup and intelligence audit
 - Saved commit 1075d02 to source ZIP plus separate compiled frontend ZIP in checkpoints/.
 - Opened both archives, checked CRC integrity, and recorded SHA-256 hashes and restore steps.

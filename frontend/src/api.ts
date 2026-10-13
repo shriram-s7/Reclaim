@@ -1,7 +1,8 @@
+import type {JourneyPlan} from './GuidedStep';
 export type Channel = 'helpline' | 'bank' | 'portal';
 export type Facts = {amount_paise:number; occurred_at:string; bank:string; method:'UPI'|'Card'|'Net banking'|'Other'; reference:string; payee:string; description:string; source:'manual'|'sample'|'fixture'|'text'};
 export type Report = {reference:string;reported_at:string;recorded_at:string;updated_at:string};
-export type Case = Facts & {id:string;created_at:string;reports:Partial<Record<Channel,Report>>;status:string;reports_recorded:number;missing_fields:string[];policy:{status:string;message:string}};
+export type Case = Facts & {plan?:JourneyPlan;id:string;created_at:string;reports:Partial<Record<Channel,Report>>;status:string;reports_recorded:number;missing_fields:string[];policy:{status:string;message:string}};
 export type Docs = Record<Channel,string>;
 export async function api<T>(path:string, init:RequestInit = {}):Promise<T> {
   const controller = new AbortController();
@@ -11,7 +12,8 @@ export async function api<T>(path:string, init:RequestInit = {}):Promise<T> {
       headers: {...(init.body && !(init.body instanceof FormData) ? {'Content-Type':'application/json'} : {}), ...init.headers}});
     if (!response.ok) {
       const body = await response.json().catch(()=>({}));
-      throw new Error(typeof body.detail === 'string' ? body.detail : 'Check the fields and try again.');
+      const fields:Record<string,string>={bank:'Bank',amount_paise:'Amount',occurred_at:'Transaction time',reported_at:'Reporting time',remind_at:'Reminder time',description:'What happened',reference:'Reference'};
+      throw new Error(typeof body.detail === 'string' ? body.detail : Array.isArray(body.detail)?body.detail.map((item:{loc:string[];msg:string})=>(fields[item.loc[item.loc.length-1]]||'Details')+': '+item.msg.replace('Value error, ','')).join(' '):'Check the fields and try again.');
     }
     return response.status === 204 ? undefined as T : await response.json();
   } catch(e) {

@@ -55,7 +55,9 @@ is configured. Images are not retained or included in the case pack.
 
 - `reclaim.db` stores fictional cases locally and is ignored by Git.
 - Only the resume case ID is kept in browser storage; delete clears the case server-side.
-- No government submissions, bank integration, reminders, authentication or payments.
+- No government submissions, bank integration, background reminder delivery, authentication or payments.
+- Guided delayed/failed contact states, saved in-app reminders and calendar export are
+  available. Calendar alerts require import and depend on calendar settings.
 - No legal eligibility or compensation calculation; see `docs/DECISIONS.md`.
 - Sources of reporting records are users; these are not official filing confirmations.
 - Prototype currently supports one transaction per case and an English interface.

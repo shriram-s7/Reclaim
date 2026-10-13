@@ -2,6 +2,7 @@
 from datetime import datetime, timezone
 from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator
+import re
 
 CHANNELS = ('helpline', 'bank', 'portal')
 
@@ -29,6 +30,20 @@ class CaseInput(BaseModel):
 
     _time = field_validator('occurred_at')(valid_time)
 
+    @field_validator('bank', 'reference', 'payee', 'description')
+    @classmethod
+    def no_control_characters(cls, value: str) -> str:
+        if any(ord(c) < 32 and c not in '\n\t\r' for c in value):
+            raise ValueError('Remove hidden control characters and check this field.')
+        return value
+
+    @field_validator('bank')
+    @classmethod
+    def bank_is_not_digits(cls, value: str) -> str:
+        if not any(c.isalpha() for c in value):
+            raise ValueError('Enter a bank name, not a number.')
+        return value
+
 class ReportInput(BaseModel):
     model_config = ConfigDict(extra='forbid', str_strip_whitespace=True)
     reference: str = Field(default='', max_length=100)
@@ -36,6 +51,7 @@ class ReportInput(BaseModel):
     _time = field_validator('reported_at')(valid_time)
 
 def decorate(case: dict) -> dict:
+    from .journey import plan
     case = dict(case)
     case['reports_recorded'] = len(case['reports'])
     case['status'] = 'reports_recorded' if len(case['reports']) == 3 else 'in_progress'
@@ -44,6 +60,7 @@ def decorate(case: dict) -> dict:
         if not case[key]]
     case['policy'] = {'status': 'not_assessed', 'message':
         'Reporting assistance only. Your bank determines liability and any reimbursement.'}
+    case['plan'] = plan(case)
     return case
 
 def money(paise: int) -> str:

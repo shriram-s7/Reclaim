@@ -3,6 +3,14 @@
 Updated: 13 October 2026, Asia/Kolkata.
 Phase: working local prototype; user-focused workflow refinement.
 
+Latest milestone: C05 guided delays and reminders. Read docs/GUIDED_WORKFLOW.md.
+35 backend tests and the production build pass. Browser verified unanswered attempt ->
+saved reminder -> alternate-channel suggestion, restart persistence and calendar export.
+Intake now has five short steps, at most two ordinary inputs per screen. Existing
+three-step mentions below describe the earlier baseline, not the latest interface.
+Tamil assistance is a limited preview, not a completed translation.
+In-app reminders/calendar export are implemented; SMS/push/background delivery is not.
+
 ## User direction
 Four teammates. Prioritize implementation. Build for ordinary people, with a clear,
 calm workflow; dashboard is secondary and absent from the everyday navigation.
@@ -42,7 +50,7 @@ baseline; the distinguishing evidence-to-action engine is not built yet.
 5. Add multiple transactions after the single-transaction path is reliable.
 
 ## Known limits
-- No live screenshot OCR/AI, reminders, authentication, real filing or bank integration.
+- No live screenshot OCR/AI, background reminder delivery, authentication, real filing or bank integration.
 - PDF currently supports its bundled Latin font; unsupported glyphs return a clear
   error and JSON preserves the original text. Do not claim Tamil PDF support.
 - No refund calculator or legal countdown: future policy remains unverified.

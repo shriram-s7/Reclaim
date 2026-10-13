@@ -115,3 +115,11 @@ def test_pdf_unsupported_glyph_does_not_silently_corrupt_text(client):
     case=client.post('/api/cases',json=data).json()
     assert client.get(f"/api/cases/{case['id']}/pack.pdf").status_code == 422
     assert 'தமிழ்' in client.get(f"/api/cases/{case['id']}/export.json").json()['description']
+
+def test_bank_number_is_not_accepted_as_name(client):
+    data=case_data(client);data['bank']='1234567890'
+    assert client.post('/api/cases',json=data).status_code==422
+
+def test_hidden_control_characters_are_rejected(client):
+    data=case_data(client);data['reference']='123\x00789'
+    assert client.post('/api/cases',json=data).status_code==422

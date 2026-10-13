@@ -18,6 +18,7 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 from .domain import CaseInput, ReportInput, CHANNELS, decorate, utcnow
 from .documents import documents, pdf_pack
 from .extraction import TextInput, parse_text
+from .journey import JourneyInput
 
 ROOT = Path(__file__).resolve().parents[2]
 DB_PATH = Path(os.environ.get('RECLAIM_DB', str(ROOT / 'reclaim.db')))
@@ -131,6 +132,27 @@ def save_report(case_id: str, channel: str, payload: ReportInput):
         case['reports'][channel] = {**payload.model_dump(mode='json'),
                                    'recorded_at': previous['recorded_at'] if previous else utcnow().isoformat(),
                                    'updated_at': utcnow().isoformat()}
+        case.setdefault('journey', {})[channel] = {'state': 'waiting', 'remind_at': None}
+        connection.execute('UPDATE cases SET data=? WHERE id=?', (json.dumps(case), case_id))
+    return decorate(case)
+
+@app.put('/api/cases/{case_id}/journey/{channel}')
+def update_journey(case_id: str, channel: str, payload: JourneyInput):
+    if channel not in CHANNELS:
+        raise HTTPException(404, 'Unknown reporting channel.')
+    with db() as connection:
+        connection.execute('BEGIN IMMEDIATE')
+        row = connection.execute('SELECT data FROM cases WHERE id=?', (case_id,)).fetchone()
+        if not row:
+            raise HTTPException(404, 'Case not found.')
+        case = json.loads(row[0])
+        if payload.state in ('waiting', 'resolved') and channel not in case['reports']:
+            raise HTTPException(422, 'Save the actual reporting details before marking this as waiting or resolved.')
+        if payload.state in ('later', 'no_answer', 'not_started') and channel in case['reports']:
+            raise HTTPException(422, 'A report is already saved. Use waiting or resolved for its follow-up.')
+        event = {**payload.model_dump(mode='json'), 'recorded_at': utcnow().isoformat()}
+        case.setdefault('journey', {})[channel] = event
+        case.setdefault('journey_history', []).append({'channel': channel, **event})
         connection.execute('UPDATE cases SET data=? WHERE id=?', (json.dumps(case), case_id))
     return decorate(case)
 

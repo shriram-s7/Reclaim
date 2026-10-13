@@ -1,4 +1,10 @@
 /* Readability and responsive corrections from the first browser review. */
+.guided-step{border-top:1px solid #dce5d5;margin-top:24px;padding-top:22px}
+.guided-heading{display:flex;align-items:center;justify-content:space-between;gap:15px}
+.guided-step h3{font-size:20px}.guided-step p{font-size:14px;line-height:1.7;color:#52634b;margin:12px 0}
+.answer-options{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0}.answer-options .button{white-space:normal;text-align:left;min-height:48px;font-size:14px}
+.reminder-note{background:#fff6df;border:1px solid #e6d5b3;border-radius:8px;padding:16px;margin:15px 0}.reminder-note .text-button{margin-right:20px}
+.safety-question{margin-top:25px;padding:15px;background:#f5f8ef;border-radius:8px}.safety-question summary{cursor:pointer;min-height:30px;font-size:13px}
 .citizen-shell .sidebar{display:none}
 .citizen-shell .main-shell{margin-left:0}
 .citizen-shell .topbar{max-width:100%;padding-left:max(24px,calc((100vw - 960px)/2));padding-right:max(24px,calc((100vw - 960px)/2))}
