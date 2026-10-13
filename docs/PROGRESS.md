@@ -1,5 +1,20 @@
 # Progress log
 
+## 2026-10-14 - C08b: reading in the journey; English/Tamil interface
+- Intake gains an optional reading step; read values pre-fill steps, fully-read steps become a
+  one-tap confirmation, every step says why it asks; reading is attached to the confirmed case
+  without re-asking. Evidence questions gain "why" and "Answer later" (deferred, asked last).
+- Defect found in browser and fixed: with no provider configured, an unfamiliar screenshot
+  asked for consent that could not be given; it now says AI reading is not set up.
+- Translation system: en.json single English source (also read by backend), ta.json with
+  identical keys/placeholders; backend messages and errors carry codes; 582 keys. Frontend split
+  into App/Home/Prepare/CaseView/GuidedStep/EvidencePanel/Reviewer with i18n hook.
+- Tamil written for all keys; awaiting native-speaker review, labelled in the interface.
+  Drafts and PDF stay English; Tamil PDF unsupported.
+- Checks: 93 backend tests passed (9 new i18n tests, 1 new provider regression); production
+  build passed; browser English journey from reading to case; Tamil at 360px across screens
+  with no leftover English except quoted evidence and no horizontal overflow.
+
 ## 2026-10-13 - C08a: AI evidence-reading adapter (not configured)
 - Checked configuration first: no Anthropic key/token in any environment scope, no `ant`
   profile, provider flag unset. Live extraction cannot run and is not claimed.

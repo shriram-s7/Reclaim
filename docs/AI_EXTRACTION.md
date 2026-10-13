@@ -41,3 +41,20 @@ $env:ANTHROPIC_API_KEY = '<your key>'        # never commit it; .env files are g
 See `docs/evaluation/extraction-results.md`. Local text rules: 11 correct, 11 correctly
 unknown, 2 missed, 0 wrong, 0 invented on 6 texts. The misses ("Ref:" label; natural-language
 date) are recorded, not tuned away, so the set stays held out. AI provider: not run.
+
+## Ordinary-person journey (C08b)
+Evidence -> only necessary questions -> confirmation -> guided reporting -> waiting/follow-up:
+1. Optional step 0: "Do you have a screenshot or a bank message?" Yes/No. Reading screen has one
+   input (file or pasted text) plus a consent box shown only when a provider is configured.
+   Without a provider: screenshots say "not set up" (fixture still recognised); pasted text is
+   read by local rules with nothing sent. Reading can be cancelled; Call 1930 stays on screen.
+2. The result shows each value with its quote and source label; unreadable values say so.
+   "Use these details" pre-fills the steps; "Type the details myself" always works.
+3. Steps whose fields were all read show "We read these. Are they right?" (Yes / Change) instead
+   of inputs. Each step explains why it asks. Step 3 offers "I don't have these".
+4. The review notes any value the person changed from the reading; their value wins.
+5. On creation the reading is attached as evidence linked to Payment 1 and questions already
+   settled on the confirmation screen are not asked again (answers marked intake_confirmation).
+6. On the case page, evidence questions explain why, offer "Not sure" and "Answer later";
+   reporting steps keep "later" and "no answer" distinct from a saved report.
+Browser-verified 14 October 2026 on an audit DB with the provider unconfigured (as here).

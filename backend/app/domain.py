@@ -3,44 +3,39 @@ from datetime import datetime, timedelta, timezone
 from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 import re
+from .formats import IST, money, shown_time
+from .messages import UserError
 
 CHANNELS = ('helpline', 'bank', 'portal')
 METHODS = Literal['UPI', 'Card', 'Net banking', 'Other']
 TRANSACTION_FIELDS = ('amount_paise', 'occurred_at', 'reference', 'payee', 'method')
-IST = timezone(timedelta(hours=5, minutes=30))
 
 def utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
 def valid_time(value: datetime) -> datetime:
     if value.tzinfo is None or value.utcoffset() is None:
-        raise ValueError('Include a timezone.')
+        raise UserError('err.timezone')
     if value > utcnow():
-        raise ValueError('The time cannot be in the future.')
+        raise UserError('err.future')
     return value.astimezone(timezone.utc)
 
 def transaction_time(value: datetime) -> datetime:
     value = valid_time(value)
     # Catches mistyped years such as 0026; not a legal or eligibility limit.
     if value.year < 2000:
-        raise ValueError('Check the year of the transaction.')
+        raise UserError('err.year')
     return value
 
 def plain_text(value: str) -> str:
     if any(ord(c) < 32 and c not in '\n\t\r' for c in value):
-        raise ValueError('Remove hidden control characters and check this field.')
+        raise UserError('err.control')
     return value
 
 def bank_name(value: str) -> str:
     if not any(c.isalpha() for c in value):
-        raise ValueError('Enter a bank name, not a number.')
+        raise UserError('err.bank_number')
     return value
-
-def shown_time(value: str) -> str:
-    return datetime.fromisoformat(value).astimezone(IST).strftime('%d %b %Y, %I:%M %p IST')
-
-def money(paise: int) -> str:
-    return f'INR {paise // 100:,}.{paise % 100:02d}'
 
 class CaseInput(BaseModel):
     model_config = ConfigDict(extra='forbid', str_strip_whitespace=True)
@@ -102,7 +97,7 @@ def check_report_order(case: dict) -> None:
     first = earliest_transaction(case)
     for channel, report in case['reports'].items():
         if datetime.fromisoformat(report['reported_at']) < first:
-            raise ValueError(f'Your saved {channel} report time is before this payment time. Check both times.')
+            raise UserError('err.report_order', channel=channel)
 
 def decorate(case: dict) -> dict:
     from .journey import plan

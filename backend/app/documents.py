@@ -11,6 +11,7 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from .domain import money, shown_time, transactions
 from .evidence import reconcile
+from .messages import UserError
 
 FONT_PATH = Path(os.environ.get('RECLAIM_PDF_FONT', str(Path(reportlab.__file__).parent / 'fonts' / 'Vera.ttf')))
 pdfmetrics.registerFont(TTFont('ReclaimBodyFont', str(FONT_PATH)))
@@ -66,7 +67,7 @@ def pdf_pack(case: dict) -> bytes:
         clean = text.replace('₹', 'INR ').replace('—', '-').replace('’', "'")
         supported = pdfmetrics.getFont('ReclaimBodyFont').face.charToGlyph
         if any(ord(char) not in supported for char in clean if not char.isspace()):
-            raise ValueError('The demo PDF font cannot render some characters in this case. Use the JSON export to preserve all text. Multilingual PDF support is pending.')
+            raise UserError('err.pdf_glyph')
         return Paragraph(escape(clean).replace('\n', '<br/>'), styles[style])
     story = [para('RECLAIM', 'Title'), para('Case preparation record', 'Heading2'),
              para(f"Case {case['id']} | Created {shown_time(case['created_at'])}"),

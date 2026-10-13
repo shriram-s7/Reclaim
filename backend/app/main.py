@@ -20,6 +20,8 @@ from . import evidence as ev
 from .documents import documents, pdf_pack
 from .extraction import TextInput, parse_quoted, parse_text
 from . import provider
+from .messages import EN, UserError, msg, render
+from fastapi.exceptions import RequestValidationError
 from .journey import JourneyInput
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -33,13 +35,42 @@ async def local_boundary(request: Request, call_next):
     origin = request.headers.get('origin')
     if request.method not in ('GET', 'HEAD', 'OPTIONS') and origin:
         if origin not in ('http://127.0.0.1:8000', 'http://localhost:8000', 'http://127.0.0.1:5173', 'http://localhost:5173'):
-            return JSONResponse({'detail': 'This demo accepts local requests only.'}, status_code=403)
+            return JSONResponse({'detail': coded(UserError('err.local_only'))}, status_code=403)
     response = await call_next(request)
     response.headers['X-Content-Type-Options'] = 'nosniff'
     response.headers['Referrer-Policy'] = 'no-referrer'
     response.headers['Cache-Control'] = 'no-store'
     response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; connect-src 'self'; frame-src 'self'; frame-ancestors 'self'; object-src 'none'; base-uri 'self'"
     return response
+
+def coded(error: Exception) -> dict:
+    """A user-facing error as {message, code, params}; wrapped UserErrors are unwrapped."""
+    inner = error.args[0] if error.args and isinstance(error.args[0], UserError) else error
+    if isinstance(inner, UserError):
+        return {'message': str(inner), 'code': inner.key, 'params': inner.params}
+    return {'message': render('err.invalid'), 'code': 'err.invalid', 'params': {}}
+
+def fail(status: int, key: str, **params) -> HTTPException:
+    return HTTPException(status, coded(UserError(key, **params)))
+
+@app.exception_handler(RequestValidationError)
+async def validation_errors(request: Request, error: RequestValidationError):
+    """Field errors carry a message code so the interface can show them in the chosen language."""
+    items = []
+    for problem in error.errors():
+        field = next((str(part) for part in reversed(problem.get('loc', ())) if isinstance(part, str) and part != 'body'), '')
+        cause = (problem.get('ctx') or {}).get('error')
+        if isinstance(cause, UserError):
+            item = coded(cause)
+        else:
+            key = f"err.type.{problem['type']}" if f"err.type.{problem['type']}" in EN else 'err.invalid'
+            params = {k: v for k, v in (problem.get('ctx') or {}).items() if isinstance(v, (int, float, str)) and not isinstance(v, bool)}
+            try:
+                item = {'message': render(key, params), 'code': key, 'params': params}
+            except (KeyError, IndexError):
+                item = {'message': render('err.invalid'), 'code': 'err.invalid', 'params': {}}
+        items.append({**item, 'field': field})
+    return JSONResponse({'detail': items}, status_code=422)
 
 @contextmanager
 def db():
@@ -55,7 +86,7 @@ def get_case(case_id: str):
     with db() as connection:
         row = connection.execute('SELECT data FROM cases WHERE id=?', (case_id,)).fetchone()
     if not row:
-        raise HTTPException(404, 'Case not found. It may have been deleted.')
+        raise fail(404, 'err.case_missing')
     return json.loads(row[0])
 
 @app.get('/api/health')
@@ -75,7 +106,7 @@ def sample_image():
 
 def validate_image(data: bytes) -> None:
     if len(data) > provider.MAX_UPLOAD_BYTES:
-        raise HTTPException(413, 'Image must be 10 MB or smaller.')
+        raise fail(413, 'err.image_size')
     try:
         with Image.open(BytesIO(data)) as picture:
             if picture.format not in ('PNG', 'JPEG', 'WEBP') or getattr(picture, 'n_frames', 1) != 1:
@@ -84,7 +115,7 @@ def validate_image(data: bytes) -> None:
                 raise ValueError()
             picture.verify()
     except (UnidentifiedImageError, OSError, ValueError, Image.DecompressionBombError):
-        raise HTTPException(422, 'Use a static PNG, JPEG or WebP image under 20 megapixels.')
+        raise fail(422, 'err.image_type')
 
 def is_fixture(data: bytes) -> bool:
     return SAMPLE.exists() and hashlib.sha256(data).digest() == hashlib.sha256(SAMPLE.read_bytes()).digest()
@@ -121,26 +152,30 @@ def remember(reading: dict) -> str:
 def read_evidence(image: bytes | None, text: str, consent: bool, kind: str) -> dict:
     """Read one piece of evidence. Always returns a usable result; failure means manual entry."""
     if kind not in ev.KINDS:
-        raise HTTPException(422, 'Choose what kind of evidence this is.')
+        raise fail(422, 'err.kind')
     text = text.strip()
     if image is None and not text:
-        raise HTTPException(422, 'Add a screenshot or paste the message text.')
+        raise fail(422, 'err.evidence_empty')
     if len(text) > provider.MAX_TEXT:
-        raise HTTPException(422, 'Message text must be 4,000 characters or fewer.')
+        raise fail(422, 'err.text_length')
     if any(ord(c) < 32 and c not in '\n\t\r' for c in text):
-        raise HTTPException(422, 'Remove hidden control characters and check this field.')
+        raise fail(422, 'err.control')
     result = {'status': 'manual', 'source': None, 'facts': {}, 'notes': [], 'kind': kind,
               'text': text if image is None else '', 'provider': None}
     if image is not None:
         validate_image(image)
         if is_fixture(image):
             fields = sample()
-            result.update(status='read', source='synthetic_fixture', notes=['Known synthetic sample: a fixture, not AI reading.'],
+            result.update(status='read', source='synthetic_fixture', notes=[msg('read.fixture')],
                           facts={f: {'value': fields[f], 'status': 'read', 'quote': '', 'quote_verified': None}
                                  for f in ev.FIELDS})
             return result
+        if not provider.status()['enabled']:
+            # Not set up: say so, rather than asking for consent that cannot be given.
+            result.update(status='unavailable', notes=[msg('read.unavailable_setup'), msg('read.nothing_saved')])
+            return result
         if not consent:
-            result.update(status='needs_consent', notes=['Nothing was sent. Agree to send it for reading, or type the details yourself.'])
+            result.update(status='needs_consent', notes=[msg('read.needs_consent')])
             return result
     elif not (consent and provider.status()['enabled']):
         # Pasted text can always be read by local rules, without sending it anywhere.
@@ -148,12 +183,12 @@ def read_evidence(image: bytes | None, text: str, consent: bool, kind: str) -> d
         facts = {f: {'value': v, 'status': 'read', 'quote': q, 'quote_verified': True}
                  for f, (v, q) in quoted.items() if f in ev.FIELDS}
         result.update(status='read' if facts else 'manual', source='pasted_text', facts=facts,
-                      notes=['Read on this computer by simple text rules, not AI.'])
+                      notes=[msg('read.local_rules')])
         return result
     try:
         reading = provider.read(image=image, text=None if image is not None else text)
     except provider.ExtractionFailed as failure:
-        result.update(status=failure.status, notes=[failure.reason, 'Nothing was saved. You can type the details yourself.'])
+        result.update(status=failure.status, notes=[failure.message, msg('read.nothing_saved')])
         return result
     result.update(status='read' if reading['facts'] else 'manual', source='ai_provider',
                   facts=reading['facts'], notes=reading['notes'], provider={'name': provider.PROVIDER, 'model': provider.MODEL})
@@ -187,7 +222,7 @@ def read_into_case(case_id: str, image: UploadFile | None = File(None), text: st
     with editing(case_id) as case:
         if result['source'] and (result['facts'] or result['text']):
             if len(case['evidence']['items']) >= 20:
-                raise ValueError('This prototype keeps up to 20 evidence items per case.')
+                raise UserError('err.evidence_limit')
             ev.new_item(case, kind, result['source'], result['facts'], result['text'], provider=result['provider'])
     return {'reading': result, 'case': decorate(case)}
 
@@ -222,16 +257,16 @@ def read_case(case_id: str):
 @app.put('/api/cases/{case_id}/reports/{channel}')
 def save_report(case_id: str, channel: str, payload: ReportInput):
     if channel not in CHANNELS:
-        raise HTTPException(404, 'Unknown reporting channel.')
+        raise fail(404, 'err.channel')
     # Read and update under a write transaction to prevent lost channel updates.
     with db() as connection:
         connection.execute('BEGIN IMMEDIATE')
         row = connection.execute('SELECT data FROM cases WHERE id=?', (case_id,)).fetchone()
         if not row:
-            raise HTTPException(404, 'Case not found.')
+            raise fail(404, 'err.case_missing')
         case = json.loads(row[0])
         if payload.reported_at < earliest_transaction(case):
-            raise HTTPException(422, 'Report time cannot be before the transaction.')
+            raise fail(422, 'err.report_before')
         previous = case['reports'].get(channel)
         case['reports'][channel] = {**payload.model_dump(mode='json'),
                                    'recorded_at': previous['recorded_at'] if previous else utcnow().isoformat(),
@@ -250,17 +285,17 @@ def save_report(case_id: str, channel: str, payload: ReportInput):
 @app.put('/api/cases/{case_id}/journey/{channel}')
 def update_journey(case_id: str, channel: str, payload: JourneyInput):
     if channel not in CHANNELS:
-        raise HTTPException(404, 'Unknown reporting channel.')
+        raise fail(404, 'err.channel')
     with db() as connection:
         connection.execute('BEGIN IMMEDIATE')
         row = connection.execute('SELECT data FROM cases WHERE id=?', (case_id,)).fetchone()
         if not row:
-            raise HTTPException(404, 'Case not found.')
+            raise fail(404, 'err.case_missing')
         case = json.loads(row[0])
         if payload.state in ('waiting', 'resolved') and channel not in case['reports']:
-            raise HTTPException(422, 'Save the actual reporting details before marking this as waiting or resolved.')
+            raise fail(422, 'err.save_report_first')
         if payload.state in ('later', 'no_answer', 'not_started') and channel in case['reports']:
-            raise HTTPException(422, 'A report is already saved. Use waiting or resolved for its follow-up.')
+            raise fail(422, 'err.report_already')
         event = {**payload.model_dump(mode='json'), 'recorded_at': utcnow().isoformat()}
         case.setdefault('journey', {})[channel] = event
         case.setdefault('journey_history', []).append({'channel': channel, **event})
@@ -274,24 +309,24 @@ def editing(case_id: str):
         connection.execute('BEGIN IMMEDIATE')
         row = connection.execute('SELECT data FROM cases WHERE id=?', (case_id,)).fetchone()
         if not row:
-            raise HTTPException(404, 'Case not found.')
+            raise fail(404, 'err.case_missing')
         case = json.loads(row[0])
         case.setdefault('evidence', {'items': [], 'answers': {}})
         try:
             yield case
         except PermissionError as error:
-            raise HTTPException(409, str(error))
+            raise HTTPException(409, coded(error))
         except LookupError as error:
-            raise HTTPException(404, str(error).strip("'"))
+            raise HTTPException(404, coded(error))
         except ValueError as error:
-            raise HTTPException(422, str(error))
+            raise HTTPException(422, coded(error))
         connection.execute('UPDATE cases SET data=? WHERE id=?', (json.dumps(case), case_id))
 
 @app.post('/api/cases/{case_id}/evidence', status_code=201)
 def add_evidence(case_id: str, payload: ev.EvidenceInput):
     with editing(case_id) as case:
         if len(case['evidence']['items']) >= 20:
-            raise ValueError('This prototype keeps up to 20 evidence items per case.')
+            raise UserError('err.evidence_limit')
         ev.add_evidence(case, payload)
     return decorate(case)
 
@@ -301,7 +336,7 @@ def add_practice_evidence(case_id: str, scenario: str):
         try:
             ev.add_practice(case, scenario)
         except KeyError:
-            raise HTTPException(404, 'Unknown practice scenario.')
+            raise fail(404, 'err.practice_unknown')
     return decorate(case)
 
 @app.delete('/api/cases/{case_id}/evidence/{evidence_id}')
@@ -310,7 +345,7 @@ def remove_evidence(case_id: str, evidence_id: str):
     with editing(case_id) as case:
         items = case['evidence']['items']
         if not any(item['id'] == evidence_id for item in items):
-            raise LookupError('Evidence not found.')
+            raise LookupError(UserError('err.evidence_missing'))
         case['evidence']['items'] = [item for item in items if item['id'] != evidence_id]
         case['evidence']['answers'].pop(f'place:{evidence_id}', None)
     return decorate(case)
@@ -345,7 +380,7 @@ def delete_case(case_id: str):
         connection.execute('PRAGMA secure_delete=ON')
         result = connection.execute('DELETE FROM cases WHERE id=?', (case_id,))
         if result.rowcount == 0:
-            raise HTTPException(404, 'Case not found.')
+            raise fail(404, 'err.case_missing')
     return Response(status_code=204)
 
 @app.get('/api/cases/{case_id}/docs')
@@ -358,7 +393,7 @@ def case_pdf(case_id: str):
     try:
         data = pdf_pack(case)
     except ValueError as error:
-        raise HTTPException(422, str(error))
+        raise HTTPException(422, coded(error))
     return Response(data, media_type='application/pdf', headers={
         'Content-Disposition': f'attachment; filename="{case["id"]}-case-pack.pdf"'})
 
@@ -373,5 +408,5 @@ if DIST.exists():
     @app.get('/{path:path}')
     def frontend(path: str):
         if path.startswith('api/'):
-            raise HTTPException(404)
+            raise fail(404, 'err.not_found')
         return FileResponse(DIST / 'index.html')
