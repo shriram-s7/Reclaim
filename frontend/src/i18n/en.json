@@ -1,4 +1,7 @@
 {
+  "err.reading_expired": "This reading is no longer available. Your answers are still here. Read the evidence again, or keep your typed details and confirm them without attaching the reading.",
+  "intake.read_again": "Read the evidence again",
+  "intake.keep_typed": "Keep my details without the reading",
  "action.bank": "Contact your bank",
  "action.helpline": "Call 1930",
  "action.portal": "Complete the portal report",

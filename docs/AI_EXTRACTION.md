@@ -5,6 +5,11 @@ tests `backend/tests/test_provider.py`; held-out set `samples/heldout` (generato
 `samples/make_heldout.py`); evaluation `scripts/eval_extraction.py`.
 
 ## Configuration status (checked 13 October 2026)
+C09 recovery correction: reading IDs expire after two hours, eviction or restart.
+Missing/consumed/expired IDs now return 409; no case is silently saved without its reading.
+The UI retains answers and offers re-reading or explicit manual continuation with fresh
+confirmation. The reading is consumed only after the case database write succeeds.
+
 **Not configured on this computer.** No `ANTHROPIC_API_KEY`/`ANTHROPIC_AUTH_TOKEN` in process,
 user or machine environment; no `ant` CLI or profile; `RECLAIM_EXTRACTION_PROVIDER` unset.
 No live extraction has ever run. To enable, for fictional data only:

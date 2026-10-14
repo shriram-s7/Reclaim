@@ -44,10 +44,11 @@ def test_amount_conflict_shows_sources_and_waits_for_reconfirmation(client):
     assert case['amount_paise'] == 1_800_000 and case['total_paise'] == 1_800_000  # not applied yet
     [change] = case['reconciliation']['changes']
     assert (change['before_text'], change['after_text']) == ('INR 18,000.00', 'INR 20,000.00')
+    reviewed_version = case['facts_version']
     response = apply(client, case)
     assert response.status_code == 200, response.text
     case = response.json()
-    assert case['amount_paise'] == 2_000_000 and case['facts_version'] == 2
+    assert case['amount_paise'] == 2_000_000 and case['facts_version'] == reviewed_version + 1
     assert case['corrections'][0]['changes'][0]['after_text'] == 'INR 20,000.00'
     # The resolved conflict does not come back and no further change is proposed.
     assert case['reconciliation']['questions'] == [] and case['reconciliation']['changes'] == []
@@ -227,3 +228,24 @@ def test_reconcile_is_deterministic():
             'method': 'UPI', 'evidence': {'items': [{'id': 'E1', 'kind': 'receipt', 'origin': 'typed_by_user',
             'label': 'Receipt', 'facts': {'amount_paise': {'value': 1_800_000, 'status': 'read', 'quote': ''}}}], 'answers': {}}}
     assert reconcile(case) == reconcile(case)
+
+def test_other_tab_cannot_apply_a_changed_evidence_review(client):
+    case = practice(client, create(client), 'amount-conflict')
+    for _ in range(2):
+        case = answer(client, case, first(case), 'same:T1')
+    question = first(case)
+    reviewed = answer(client, case, question, 'value:1')
+    # Another tab changes the candidate after the first tab saw its review.
+    updated = answer(client, reviewed, question, 'unknown')
+    assert updated['facts_version'] > reviewed['facts_version']
+    rejected = apply(client, reviewed)
+    assert rejected.status_code == 409
+    assert client.get('/api/cases/' + case['id']).json()['amount_paise'] == 1_800_000
+
+def test_removed_evidence_invalidates_an_open_confirmation(client):
+    case = practice(client, create(client), 'amount-conflict')
+    for _ in range(2):
+        case = answer(client, case, first(case), 'same:T1')
+    reviewed = answer(client, case, first(case), 'value:1')
+    client.delete(f"/api/cases/{case['id']}/evidence/E2")
+    assert apply(client, reviewed).status_code == 409

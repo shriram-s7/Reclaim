@@ -120,3 +120,26 @@
 - Sample PDF rendered and visually reviewed on both pages.
 - Final browser check: revised flow saved a case, saved one reporting reference, and
   Next opened the bank draft. No horizontal overflow at 360px. Screenshot saved.
+
+## 2026-10-14 - C09: independent Claude handoff audit and recovery fixes
+- Read the supplied Claude transcript and compared commits/code with saved plans.
+  Working tree was clean at eb20380. Independent baseline: 93 tests and build passed.
+- Fixed evidence review race: evidence/answer mutations invalidate facts_version so
+  a stale confirmation cannot apply unseen changes. UI refreshes on 409.
+- Fixed missing/consumed/expired reading silently omitted during case creation. Enforced
+  cache TTL on use; consume after DB success; explicit recovery with answers retained and
+  confirmation reset. English/Tamil recovery messages added (Tamil still unreviewed).
+- Verification: 97 backend tests pass, including added stale-answer, evidence-removal,
+  expired-reading and restart-loss regressions. Production build passes.
+- Browser on isolated tmp/c09-browser.db: local message reading, read-value confirmation,
+  short intake, restart before creation, clear recovery choices, manual continuation resets
+  checkbox, creation retains INR 1,250.50/reference/recipient/time. API showed 409 then 201.
+  Case RC-581C6FC70CE8. Screenshot docs/screenshots/c09-reading-recovery.png.
+- Browser automation did not fill the native date picker successfully; this run proceeded
+  with a timestamp-bearing test message. Manual date entry on a real phone remains untested.
+- React review: recovery state derived from typed error, event-driven confirmation reset,
+  translated labelled buttons, errors exposed as alerts; no new dependencies.
+- Refreshed STATUS/plan precedence; retired old percentage estimate. No live AI accuracy,
+  real-device or native-Tamil validation claimed. Original PDFs and older ZIPs unchanged.
+- Next: provider held-out evaluation; independent phone/Tamil review; payment removal and
+  custom reminder controls. C09 archives are recorded in checkpoints/C09-MANIFEST.json.

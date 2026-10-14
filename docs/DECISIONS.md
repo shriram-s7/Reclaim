@@ -90,3 +90,12 @@ held-out set is run with a configured key.
 English and Tamil share one catalogue structure; English is the single source for backend and
 interface. Tamil is labelled as awaiting native-speaker review. Official drafts and the PDF
 remain English; multilingual PDF is not claimed until rendering is tested.
+
+## D13 - Confirm the exact review, preserve evidence loss visibly (C09)
+The existing facts_version is a review revision: adding/removing evidence or changing
+answers advances it even when confirmed payments do not change. An old confirmation
+must return 409 rather than applying a proposal the person has not seen. The interface
+reloads the review and resets confirmation. Correction history still records only applied
+fact changes; revision numbers may have gaps.
+An unavailable intake reading must not silently disappear from a new case. Keep the
+answers and offer re-reading or explicit manual continuation with fresh confirmation.

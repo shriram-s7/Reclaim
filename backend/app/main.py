@@ -232,12 +232,16 @@ def create_case(payload: CaseInput):
     case.update(id='RC-' + uuid4().hex[:12].upper(), created_at=utcnow().isoformat(), reports={},
                 facts_version=1, corrections=[], evidence={'items': [], 'answers': {}, 'next': 1})
     store_transactions(case, transactions(case))
-    reading = READINGS.pop(payload.reading_id, None) if payload.reading_id else None
+    reading = READINGS.get(payload.reading_id) if payload.reading_id else None
+    if payload.reading_id and (not reading or utcnow() - reading['created'] > READING_TTL):
+        raise fail(409, 'err.reading_expired')
     if reading:
         item = ev.new_item(case, reading['kind'], reading['source'], reading['facts'], reading['text'], provider=reading['provider'])
         ev.settle_with_intake(case, item['id'])
     with db() as connection:
         connection.execute('INSERT INTO cases VALUES (?,?)', (case['id'], json.dumps(case)))
+    if payload.reading_id:
+        READINGS.pop(payload.reading_id, None)
     return decorate(case)
 
 @app.post('/api/extract-text')
@@ -312,6 +316,8 @@ def editing(case_id: str):
             raise fail(404, 'err.case_missing')
         case = json.loads(row[0])
         case.setdefault('evidence', {'items': [], 'answers': {}})
+        previous_evidence = json.dumps(case['evidence'], sort_keys=True)
+        previous_version = case.get('facts_version', 1)
         try:
             yield case
         except PermissionError as error:
@@ -320,6 +326,10 @@ def editing(case_id: str):
             raise HTTPException(404, coded(error))
         except ValueError as error:
             raise HTTPException(422, coded(error))
+        # A review also depends on candidate evidence and answers. Invalidate old
+        # confirmations even when the confirmed payment itself has not changed.
+        if case.get('facts_version', 1) == previous_version and json.dumps(case['evidence'], sort_keys=True) != previous_evidence:
+            case['facts_version'] = previous_version + 1
         connection.execute('UPDATE cases SET data=? WHERE id=?', (json.dumps(case), case_id))
 
 @app.post('/api/cases/{case_id}/evidence', status_code=201)

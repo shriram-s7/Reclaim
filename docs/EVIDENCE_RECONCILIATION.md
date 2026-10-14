@@ -1,6 +1,9 @@
 # Evidence reconciliation milestone - C07
 
 Date: 13 October 2026. Implements roadmap I1 and the deterministic part of I3.
+Historical C07 report. C08 added the image/text provider adapter (untested live) and Tamil;
+C09 makes facts_version a review revision: evidence/answer mutations also advance it.
+Old confirmations cannot apply a newly changed proposal. See STATUS.md.
 Code: `backend/app/evidence.py`, `frontend/src/EvidencePanel.tsx`. Tests: `backend/tests/test_evidence.py`.
 
 ## Implemented versus simulated

@@ -1,87 +1,57 @@
 # Reclaim current status
 
-Updated: 13 October 2026, Asia/Kolkata.
-Phase: working local prototype; user-focused workflow refinement.
+Updated: 14 October 2026, Asia/Kolkata. Latest milestone: C09 independent handoff audit.
+Local fictional-data prototype; do not expose the unauthenticated backend publicly.
 
-Latest milestone: C08 AI reading adapter + reading-first journey + English/Tamil interface.
-- AI reading (docs/AI_EXTRACTION.md): adapter built and tested with fakes only. NOT configured
-  on this computer (no key/profile, flag unset) - no live extraction has run; held-out provider
-  results are "not run". Local text rules on held-out texts: 11 correct, 11 correct-unknown,
-  2 missed, 0 wrong. Manual entry always works.
-- Journey: optional reading step -> one-tap confirmation of read values -> review -> case with
-  evidence attached, no repeated questions -> guided reporting -> waiting/follow-up.
-- Languages (docs/I18N.md): 582-key catalogues; Tamil complete but AWAITING NATIVE-SPEAKER
-  REVIEW; drafts/PDF English only. In-app reminders and calendar export only; no SMS/push.
-- Checks: 93 backend tests and production build pass; browser English journey and Tamil 360px.
-Previous milestone: C07 evidence reconciliation with adaptive clarification. Read
-docs/EVIDENCE_RECONCILIATION.md (implemented vs simulated). 56 backend tests and the build
-pass. Browser-verified all acceptance scenarios on a separate audit DB; existing saved cases
-load (copy of reclaim.db, 4 cases). Evidence checks are rules-based; practice evidence is
-labelled synthetic fixtures; images are not read; no AI provider is connected.
-Earlier: C06 journey audit fixes (Back/reload keeps answers, reference correction keeps
-reminders, clear reported/unreported labels).
-Previous: C05 guided delays and reminders. Intake has five short steps, at most two
-ordinary inputs per screen. Tamil assistance is a limited preview, not a translation.
-In-app reminders/calendar export are implemented; SMS/push/background delivery is not.
+## Verified state
+- Claude handoff commits: 77cdd62 (journey fixes), 3cc029e (reconciliation),
+  5bac402 (provider adapter), eb20380 (reading-first intake and English/Tamil).
+- C09 independently reran inherited checks: 93 backend tests and frontend build passed.
+- C09 fixes: evidence/answer mutations now invalidate stale confirmations; a missing,
+  consumed or expired reading returns a clear 409 instead of silently losing provenance.
+  Intake offers re-reading or explicit manual continuation, retaining answers and clearing
+  confirmation. Evidence review reloads on 409 and requires a fresh confirmation.
+- Current backend suite: 97 passed. Frontend production build passed.
+- Browser: local text reading -> short intake -> review -> audit-server restart ->
+  reading-lost warning -> explicit manual choice -> unchecked confirmation -> saved case.
+  Fictional case RC-581C6FC70CE8 in tmp/c09-browser.db; amount INR 1,250.50 retained.
+  Screenshot: docs/screenshots/c09-reading-recovery.png.
 
-## User direction
-Four teammates. Prioritize implementation. Build for ordinary people, with a clear,
-calm workflow; dashboard is secondary and absent from the everyday navigation.
+## What works
+- Real FastAPI/SQLite persistence, validation, reporting drafts, references, PDF/JSON exports.
+- Optional reading, five short intake steps, source quotes, one-question evidence placement,
+  conflicts, possible duplicates, multiple confirmed payments and re-confirmed corrections.
+- Reporting states distinguish not started, later, no answer, reported/waiting and resolved.
+  Reminders persist; in-app due checks and calendar export exist. No SMS/push delivery.
+- English/Tamil catalogues (585 keys); Tamil awaits native review. Drafts/PDF are English.
+- Live AI adapter exists, but no live provider evaluation is recorded. Local rules and
+  labelled fictional image fixtures work without a key. Do not call fixtures AI accuracy.
 
-## Completed
-- Read all six PDFs (31 pages), preserved originals and extracted searchable text.
-- Revised plan and policy/source decisions in docs/MASTER_PLAN.md and docs/DECISIONS.md.
-- React + FastAPI + SQLite local app: confirmed case creation, reporting drafts,
-  saved references and reporting times, deletion, PDF/JSON exports, demo queue/stage.
-- Exact-byte synthetic screenshot fixture and conservative local message parsing.
-- Three-step form: payment details -> incident details -> confirmation.
-- Removed dashboard/sidebar from citizen flow; simpler copy and next-step action.
-- First Git checkpoint: 21c9c7d. Further refinements are saved in a subsequent commit.
-
-## Verification
-- Backend: 26 tests passed, one upstream Starlette/httpx deprecation warning.
-- Latest frontend production build passed.
-- Browser: earlier complete three-report journey reached 3/3 with correct draft references.
-- Browser: revised three-step form creates a case; saving a step exposes the correct Next action, which opens the bank draft.
-- Local message parsing preserves paise and leaves missing date blank.
-- PDF sample rendered and both pages visually inspected; no clipping found.
-- Latest 360px case screen measured at 345px document width, without overflow.
-
-## Run and resume
-Read AGENTS.md, docs/MASTER_PLAN.md, docs/DECISIONS.md.
-Run scripts/run.ps1 from D:/RECLAIM; http://127.0.0.1:8000.
-Server started in this chat; if unavailable rerun the script. It is loopback only.
-Run scripts/verify.ps1. Restricted execution may need permission for test-loop sockets.
-
-## Next work
-1. Configure a key (fictional data only) and run `scripts/eval_extraction.py --provider`;
-   record held-out image/text results honestly before any accuracy claim.
-2. Native Tamil speaker review of ta.json (see docs/I18N.md limits); then update the label.
-3. Independent user test of the reading-first journey on a real phone.
-4. Removing a confirmed payment with re-confirmation; custom reminder time.
-5. Restart scripts/run.ps1 - an older server from a previous session may still hold port 8000.
+## Next actions, in order
+1. Configure the existing provider locally with fictional data and run the held-out
+   evaluation; measure errors/unknowns before claiming screenshot-reading accuracy.
+2. Test the complete journey with an independent ordinary user on a real phone; obtain
+   native Tamil review. The C09 browser test is desktop, not a real-device test.
+3. Add safe removal of mistakenly confirmed payments and custom reminder times.
+4. Rehearse conflict, duplicate, unreadable evidence, delayed call and provider-failure demos.
 
 ## Known limits
-- AI reading untested live; semantic misreading (including injected text) can only be
-  mitigated by mandatory human confirmation. Image quotes are provider transcriptions.
-- Linking more evidence to a payment can re-open a conflict question already answered.
-- Tamil awaits native review; template sentences may have awkward case endings.
-- Evidence: duplicate/conflict thresholds are unvalidated product judgments; images are
-  never read; practice scenarios are fixtures. See docs/EVIDENCE_RECONCILIATION.md.
-- Phone checks used a 360px same-origin frame inside desktop Chrome, not a real device.
-- On a phone, "How did this step go?" sits below the draft text; users must scroll to it.
-- A server started by an earlier session may still be listening on port 8000 with old
-  code. Restart scripts/run.ps1 to serve the C06 build.
-- No live screenshot OCR/AI, background reminder delivery, authentication, real filing or bank integration.
-- PDF currently supports its bundled Latin font; unsupported glyphs return a clear
-  error and JSON preserves the original text. Do not claim Tamil PDF support.
-- No refund calculator or legal countdown: future policy remains unverified.
-- No GitHub remote, topic approval or submission confirmed. Work is pre-event.
-- Synthetic data only. Do not expose the unauthenticated demo queue publicly.
+- Evidence comparison is rules-based; matching tolerances are not independently validated.
+  New linked evidence can reopen answered conflicts. Human confirmation is still essential.
+- Reading cache is bounded, in-memory and lasts two hours; restart loses it. Recovery is
+  now explicit. Unsaved answers remain in the browser tab, not a cross-device account.
+- Natural-language dates can be missed by the local parser. Live semantic accuracy unknown.
+- Tamil input is preserved in JSON, but the bundled PDF font cannot render it; export
+  returns an error for unsupported glyphs. No reviewed multilingual PDF.
+- No background reminder service, authentication, bank integration, real filing, legal
+  eligibility calculator, refund promise or production deployment.
+- Topic approval/submission not confirmed. Pre-event provenance remains in PRE_EXISTING.md.
 
-## Immutable backup
-C03 source and compiled-frontend ZIPs: `D:\RECLAIM\checkpoints`.
-Source: `reclaim-c03-1075d02-source.zip`; build: `reclaim-c03-1075d02-build.zip`.
-Both passed ZIP integrity checks. Hashes: checkpoints/C03-MANIFEST.json.
-Restore instructions: checkpoints/RESTORE.md. No dependencies or case database included.
-These are same-drive backups, not off-device disaster recovery.
+## Run and handoff
+Read AGENTS.md, this file, docs/MASTER_PLAN.md and docs/DECISIONS.md before editing.
+Run scripts/run.ps1 for http://127.0.0.1:8000 with the normal local database.
+C09 audit server: http://127.0.0.1:5173, separate tmp/c09-browser.db.
+Run scripts/verify.ps1; the test client needs loopback socket permission in restricted runs.
+Checkpoint archives and manifests live in D:/RECLAIM/checkpoints; see RESTORE.md.
+C03/C05 archives remain historical baselines. C09 source/build backup is recorded in
+checkpoints/C09-MANIFEST.json. Same-drive backups are not off-device disaster recovery.
