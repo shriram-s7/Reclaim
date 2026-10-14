@@ -1,0 +1,18 @@
+{
+  "commit": "9c5d2ee",
+  "archives": [
+    {
+      "archive": "reclaim-c09-9c5d2ee-source.zip",
+      "sha256": "c949cab07b1c850e49a3cca1d5e58f014463831893e1f384bfa1f658716c8d4b",
+      "bytes": 2760342,
+      "integrity": "passed"
+    },
+    {
+      "archive": "reclaim-c09-9c5d2ee-build.zip",
+      "sha256": "f2901de71c620aa64a2166bcdbcffafbe1621f0140485e59907eddf4c5b679b6",
+      "bytes": 123272,
+      "integrity": "passed"
+    }
+  ],
+  "restore": "See RESTORE.md. Source excludes dependencies, database and credentials; build contains frontend/dist."
+}
