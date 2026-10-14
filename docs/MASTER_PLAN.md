@@ -1,6 +1,12 @@
 # Reclaim: from panic to a prepared case
 
-Version 2, 13 October 2026. This is the active implementation plan.
+Version 3, 14 October 2026. This is the active implementation plan.
+
+Current phase: validate the implemented intelligence pipeline. Source-linked reconciliation,
+adaptive questions, multiple payments, a provider adapter and English/Tamil UI now exist.
+Remaining gates: real provider evaluation, independent phone usability and native Tamil
+review. STATUS.md is the current verification record. The phase table below describes the
+baseline build, not current completion or priority. Intelligence is core scope.
 
 Update: `docs/INTELLIGENCE_ROADMAP.md` defines the next milestone. Intelligence is now
 the central hackathon deliverable, not optional polish. Preserve the local baseline while
@@ -37,8 +43,9 @@ local review queue; case export; deletion; repeatable synthetic sample; failure 
 P1: explicit synthetic screenshot fixture lookup, safe image validation, text parsing;
 PDF case pack; stage view; evidence-gap indicators; mobile accessibility; copy fallback.
 
-P2: live vision extraction with a configured key and bounded timeout; reviewed Tamil
-translations; multiple transactions; verified policy profiles; secure deployment.
+Current P0: live vision evaluation with a configured key and bounded timeout; reviewed Tamil
+translations; ordinary-user phone testing. Multiple transactions are implemented.
+Deferred: verified policy profiles and secure production deployment.
 
 Defer: WhatsApp API, reminder delivery, bank SSO, bank integrations, real claims,
 arbitrary sensitive uploads to third-party models, production multi-tenancy.
@@ -55,7 +62,7 @@ arbitrary sensitive uploads to third-party models, production multi-tenancy.
 | 6: event finish | challenge work, final verification and submission | artifacts ready before 09:00 jury, submission by 11:00 |
 
 Phases 1-4 are the initial local prototype. A phase is complete only when its gate has
-evidence in STATUS.md. Phase 5 must not delay Phase 4. No false “AI” badge for fixtures.
+evidence in STATUS.md. Intelligence validation is now the next core gate. No false “AI” badge for fixtures.
 
 ## Event alignment (IST, 14-15 October)
 Use the Event Flow's earlier times conservatively: 08:30 registration; 11:00 build start;

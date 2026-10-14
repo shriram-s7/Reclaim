@@ -3,7 +3,16 @@
 Date: 13 October 2026. Supersedes the earlier classification of intelligence as
 optional polish. The ordinary person's reporting journey remains the main product.
 
-## What we have
+## Current audit update - C09, 14 October 2026
+The assessment below is historical, from C04. Its 35-45% estimate is retired; do not
+repeat it as current progress. I1 and deterministic I3 are implemented; I2 adapter and
+I4 journey integration are implemented but live-provider accuracy is untested. I5 has
+an evaluation harness and English/Tamil catalogues; provider results, native language
+review and independent ordinary-user testing remain open. Reminders are local/calendar
+only. C09 verifies 97 tests and fixes stale evidence confirmation and lost-reading recovery.
+Use STATUS.md for current gates. No replacement percentage is supported by measured scope.
+
+## Historical C04 assessment: what we had
 A working local reporting assistant, not merely static frontend pages: FastAPI validates
 data, SQLite persists it, templates produce consistent drafts, reporting records retain
 timestamps, and PDF/JSON exports work. The UI is a guided three-step intake.

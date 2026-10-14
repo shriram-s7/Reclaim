@@ -1,7 +1,7 @@
 import {useEffect, useRef, useState} from 'react';
 import {ArrowRight, Check, FileSearch, HelpCircle, Pencil, Plus, Trash2, Upload} from 'lucide-react';
 import {api, fromInput, localInput, parsePaise, type Case, type Choice, type ProviderStatus, type Question, type Reading, type Source, type Transaction} from './api';
-import {useI18n} from './i18n';
+import {ApiError, useI18n} from './i18n';
 
 const kinds = ['receipt', 'bank_message', 'chat', 'screenshot', 'other'];
 const methodKey = (method: string) => 'method.' + method.toLowerCase().replace(' ', '');
@@ -15,7 +15,13 @@ export function EvidencePanel({c, refresh, notify}: Props) {
   const [error, setError] = useState<unknown>(null);
   async function run(action: () => Promise<unknown>, done: string) {
     setBusy(true); setError(null);
-    try {await action(); await refresh(); if (done) notify(t(done))} catch (e) {setError(e)} finally {setBusy(false)}
+    try {await action(); await refresh(); if (done) notify(t(done))} catch (e) {
+      setError(e);
+      if (e instanceof ApiError && e.status === 409) {
+        // Reload the new review; version-dependent forms reset their confirmation.
+        try {await refresh()} catch (reloadError) {setError(reloadError)}
+      }
+    } finally {setBusy(false)}
   }
   const question = r.questions[0];
   const ready = r.changes.filter(change => change.type === 'update' || change.complete);

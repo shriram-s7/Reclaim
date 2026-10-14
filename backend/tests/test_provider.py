@@ -231,9 +231,9 @@ def test_confirmed_case_keeps_reading_without_asking_again(client, configured):
     assert case['reconciliation']['questions'] == []
     assert case['amount_paise'] == 1_750_000 and case['reference'] == ''  # the person's confirmed values win
     assert all(a.get('by') == 'intake_confirmation' for a in case['evidence']['answers'].values())
-    # A reading is used once; an unknown or reused id never blocks creating a case.
+    # A consumed reading must never silently disappear from the saved case.
     again = client.post('/api/cases', json=data)
-    assert again.status_code == 201 and again.json()['evidence']['items'] == []
+    assert again.status_code == 409 and again.json()['detail']['code'] == 'err.reading_expired'
 
 def test_reading_into_existing_case_adds_evidence_only_when_read(client, configured, monkeypatch):
     case = client.post('/api/cases', json=case_data(client)).json()
@@ -246,3 +246,22 @@ def test_reading_into_existing_case_adds_evidence_only_when_read(client, configu
     monkeypatch.setenv('RECLAIM_EXTRACTION_PROVIDER', 'off')
     body = client.post(url, data={'consent': 'true'}, files={'image': ('a.png', png('red'), 'image/png')}).json()
     assert body['reading']['status'] == 'unavailable' and len(body['case']['evidence']['items']) == 1
+
+@pytest.mark.parametrize('missing', [False, True])
+def test_expired_or_lost_reading_keeps_case_unsaved_until_explicit_choice(client, configured, missing):
+    from datetime import timedelta
+    result = read(client, png())
+    key = result['reading_id']
+    if missing:
+        main.READINGS.pop(key)  # restart/eviction
+    else:
+        main.READINGS[key]['created'] -= main.READING_TTL + timedelta(seconds=1)
+    data = {**case_data(client), 'reading_id': key}
+    before = len(client.get('/api/cases').json())
+    response = client.post('/api/cases', json=data)
+    assert response.status_code == 409
+    assert response.json()['detail']['code'] == 'err.reading_expired'
+    assert len(client.get('/api/cases').json()) == before
+    data.pop('reading_id')  # explicit manual continuation, with reconfirmation
+    response = client.post('/api/cases', json=data)
+    assert response.status_code == 201 and response.json()['evidence']['items'] == []

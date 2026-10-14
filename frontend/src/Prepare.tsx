@@ -1,7 +1,7 @@
 import {useEffect, useRef, useState} from 'react';
 import {AlertCircle, ArrowRight, Check, ChevronLeft, Download, FileText, LockKeyhole, Phone, Plus, ShieldCheck, Upload} from 'lucide-react';
 import {api, fromInput, localInput, parsePaise, type Case, type Fact, type Facts, type ProviderStatus, type Reading} from './api';
-import {useI18n, type Msg} from './i18n';
+import {ApiError, useI18n, type Msg} from './i18n';
 import {go} from './nav';
 
 const emptyFacts = (): Facts => ({amount_paise: 0, occurred_at: '', bank: '', method: 'Other', reference: '', payee: '', description: '', source: 'manual'});
@@ -44,6 +44,7 @@ export function Prepare({notify}: {notify: (text: string) => void}) {
   const [confirmed, setConfirmed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>('');
+  const readingExpired = error instanceof ApiError && error.problems.some(p => p.code === 'err.reading_expired');
   const hasAnswers = Boolean(amount || facts.occurred_at || facts.bank || facts.reference || facts.payee || facts.description);
   useEffect(() => {if (hasAnswers) sessionStorage.setItem(DRAFT_KEY, JSON.stringify({facts, amount, readFacts, readingId, readSource}))}, [facts, amount, readFacts, readingId, readSource, hasAnswers]);
   // Browser and phone Back move between intake steps instead of leaving the form.
@@ -106,6 +107,10 @@ export function Prepare({notify}: {notify: (text: string) => void}) {
       <span className="step-counter">{step === 0 ? t('intake.before_start') : t('intake.counter', {n: step})}</span></div>
     <div className="compact-urgent"><Phone size={17}/> {t('intake.urgent')} <a href="tel:1930">{t('urgent.call_short')}</a></div>
     {show(error) && <div className="error" role="alert"><AlertCircle size={18}/>{show(error)}</div>}
+    {readingExpired && <div className="answer-options">
+      <button className="button primary" onClick={() => goStep(0)}>{t('intake.read_again')}</button>
+      <button className="button secondary" onClick={() => {setReadingId(undefined); setReadFacts({}); setReadSource(null); setFacts(prev => ({...prev, source: 'manual'})); setConfirmed(false); setError('');}}>{t('intake.keep_typed')}</button>
+    </div>}
     <div className="prepare-grid"><section className="form-card">
       {step === 0 ? <ReadEvidence busy={busy} onUse={useReading} onSkip={() => goStep(1)} onSample={loadSample}/> : step < 5 ? <>
         <div className="form-card-heading"><span className="icon-box"><FileText size={20}/></span><div><h2>{step === 1 ? t('intake.card.payment') : t('intake.card.incident')}</h2><p>{step === 1 ? t('intake.card.payment_sub') : t('intake.card.incident_sub')}</p></div></div>
