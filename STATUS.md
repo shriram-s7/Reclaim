@@ -51,6 +51,8 @@ Local fictional-data prototype; do not expose the unauthenticated backend public
 Read AGENTS.md, this file, docs/MASTER_PLAN.md and docs/DECISIONS.md before editing.
 Run scripts/run.ps1 for http://127.0.0.1:8000 with the normal local database.
 C09 audit server: http://127.0.0.1:5173, separate tmp/c09-browser.db.
+Same-Wi-Fi phone test (opt-in, unauthenticated, fictional data only): set
+RECLAIM_EXTRA_HOSTS=<PC Wi-Fi IP>, bind uvicorn to that IP, allow TCP 8000 in firewall.
 Run scripts/verify.ps1; the test client needs loopback socket permission in restricted runs.
 Checkpoint archives and manifests live in D:/RECLAIM/checkpoints; see RESTORE.md.
 C03/C05 archives remain historical baselines. C09 source/build backup is recorded in

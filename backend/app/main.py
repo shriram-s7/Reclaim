@@ -28,7 +28,9 @@ ROOT = Path(__file__).resolve().parents[2]
 DB_PATH = Path(os.environ.get('RECLAIM_DB', str(ROOT / 'reclaim.db')))
 SAMPLE = ROOT / 'samples' / 'synthetic-payment.png'
 app = FastAPI(title='Reclaim local demo', version='0.1.0')
-app.add_middleware(TrustedHostMiddleware, allowed_hosts=['localhost', '127.0.0.1', 'testserver'])
+# RECLAIM_EXTRA_HOSTS (comma-separated) opts in to same-Wi-Fi phone testing; off by default.
+EXTRA_HOSTS = [h.strip() for h in os.environ.get('RECLAIM_EXTRA_HOSTS', '').split(',') if h.strip()]
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=['localhost', '127.0.0.1', 'testserver', *EXTRA_HOSTS])
 
 @app.middleware('http')
 async def local_boundary(request: Request, call_next):
