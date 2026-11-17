@@ -121,8 +121,8 @@
 - Final browser check: revised flow saved a case, saved one reporting reference, and
   Next opened the bank draft. No horizontal overflow at 360px. Screenshot saved.
 
-## 2026-10-14 - C09: independent Claude handoff audit and recovery fixes
-- Read the supplied Claude transcript and compared commits/code with saved plans.
+## 2026-10-14 - C09: independent handoff audit and recovery fixes
+- Read the supplied session transcript and compared commits/code with saved plans.
   Working tree was clean at eb20380. Independent baseline: 93 tests and build passed.
 - Fixed evidence review race: evidence/answer mutations invalidate facts_version so
   a stale confirmation cannot apply unseen changes. UI refreshes on 409.

@@ -4,7 +4,7 @@ Updated: 14 October 2026, Asia/Kolkata. Latest milestone: C09 independent handof
 Local fictional-data prototype; do not expose the unauthenticated backend publicly.
 
 ## Verified state
-- Claude handoff commits: 77cdd62 (journey fixes), 3cc029e (reconciliation),
+- Handoff commits: 77cdd62 (journey fixes), 3cc029e (reconciliation),
   5bac402 (provider adapter), eb20380 (reading-first intake and English/Tamil).
 - C09 independently reran inherited checks: 93 backend tests and frontend build passed.
 - C09 fixes: evidence/answer mutations now invalidate stale confirmations; a missing,

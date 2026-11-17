@@ -8,7 +8,7 @@ Pre-event AI-assisted work: document extraction, revised requirements and archit
 checkpoint files, and the implementation recorded in docs/PROGRESS.md and Git history.
 This file must NOT be left empty or described as libraries-only.
 
-C06-C08 were produced with Claude Code; C09 independently audits that handoff and fixes
+C06-C08 are earlier phases; C09 independently audits that handoff and fixes
 confirmation/restart recovery. These are pre-event improvements; disclose them with the
 existing prototype, evidence engine, provider adapter and language catalogues.
 
